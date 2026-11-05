@@ -1,0 +1,80 @@
+<!DOCTYPE html><html lang="id"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Jejak Temuan 6S</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<?!= include('Stylesheet') ?></head><body>
+<header class="bar"><div class="brand"><img class="logo" id="lg" alt="6S"><div><b>Jejak Temuan 6S</b><small>FINISHING MILL</small></div></div>
+<button class="btn ghost" id="btnAdm" onclick="openPin('admin')">Admin</button></header>
+<main>
+<section id="sec-input" class="sec on">
+ <h1>Input Temuan</h1><p class="mut">Isi temuan, lalu upload foto Before dan/atau After (salah satu sudah cukup).</p>
+ <div class="card">
+  <label>Area / Lokasi <i>*</i></label><select id="area"></select>
+  <label>Remark of Finding <i>*</i> <span class="mut" id="cnt">0/250</span></label>
+  <textarea id="remark" maxlength="250" placeholder="Contoh: Pilar terdapat lubang" oninput="cnt.textContent=this.value.length+'/250'"></textarea>
+  <div class="two">
+   <div class="fz"><div class="phh">Foto Before <span class="mut">(opsional)</span></div>
+    <div class="drop" id="dz-b" data-k="b" tabindex="0"><img id="pv-b" alt=""><div class="hint"><b>Seret &amp; lepas foto di sini</b><br><small>atau klik kotak ini lalu tekan Ctrl+V untuk menempel</small></div></div>
+    <div class="pbtn"><label class="btn ghost" for="fb">Pilih File</label><button class="btn ghost" type="button" onclick="tempel('b')">Tempel</button><button class="btn ghost" type="button" onclick="hapusFoto('b')">Hapus</button></div>
+    <input type="file" id="fb" data-k="b" accept="image/*" hidden onchange="pilih(this)"></div>
+   <div class="fz"><div class="phh">Foto After <span class="mut">(opsional)</span></div>
+    <div class="drop" id="dz-a" data-k="a" tabindex="0"><img id="pv-a" alt=""><div class="hint"><b>Seret &amp; lepas foto di sini</b><br><small>atau klik kotak ini lalu tekan Ctrl+V untuk menempel</small></div></div>
+    <div class="pbtn"><label class="btn ghost" for="fa">Pilih File</label><button class="btn ghost" type="button" onclick="tempel('a')">Tempel</button><button class="btn ghost" type="button" onclick="hapusFoto('a')">Hapus</button></div>
+    <input type="file" id="fa" data-k="a" accept="image/*" hidden onchange="pilih(this)"></div>
+  </div>
+  <p class="info">Foto dikompres otomatis. Foto yang belum ada bisa ditambahkan nanti dari menu Daftar.</p>
+  <button class="btn" id="btnSave" onclick="simpan()">Simpan Temuan</button>
+  <button class="btn ghost" onclick="resetForm()">Reset Form</button>
+ </div>
+</section>
+<section id="sec-daftar" class="sec">
+ <h1>Daftar Temuan</h1>
+ <div class="stats"><div><small>TOTAL</small><b id="sT">0</b></div><div><small>OPEN</small><b id="sO" class="amb">0</b></div><div><small>CLOSE</small><b id="sC" class="grn">0</b></div></div>
+ <input id="q" placeholder="Cari remark, area, atau PIC…" oninput="debounceRender()">
+ <select id="fs" onchange="renderList()"><option value="">Semua status</option><option>Open</option><option>Close</option></select>
+ <div id="list"><div class="skel"></div><div class="skel"></div></div>
+</section>
+<section id="sec-unduh" class="sec">
+ <h1>Unduh Hasil Temuan</h1>
+ <div class="card lock" id="gU"><b>Menu ini hanya untuk Admin</b><p class="mut">Hanya admin yang dapat membuka menu Unduh dan mengunduh hasil akhir.</p><button class="btn" onclick="openPin('unduh')">Masuk Mode Admin</button></div>
+ <div class="card" id="cU">
+  <label>Area / Mill</label><input id="xMill" value="FINISHING PF 1">
+  <label>Auditee</label><input id="xAuditee"><label>Auditor</label><input id="xAuditor">
+  <label>Rentang tanggal</label><div class="row"><input type="date" id="xT1"><input type="date" id="xT2"></div>
+  <label>Area yang disertakan</label><div id="xAreas"></div>
+  <label>Format</label>
+  <div class="fmt"><label><input type="radio" name="fmt" value="xlsx" checked> Spreadsheet Excel (.xlsx)</label>
+  <label><input type="radio" name="fmt" value="docx"> Dokumen Word (.docx)</label>
+  <label><input type="radio" name="fmt" value="gdoc"> Google Doc</label>
+  <label><input type="radio" name="fmt" value="pdf"> PDF</label></div>
+  <button class="btn ghost" onclick="preview()">Pratinjau Tabel</button>
+  <button class="btn" id="btnX" onclick="unduh()">Siapkan Dokumen</button>
+  <a id="xLink" class="btn ghost" style="display:none" target="_blank" rel="noopener">Buka / Unduh Berkas</a>
+ </div>
+</section>
+<section id="sec-admin" class="sec">
+ <h1>Mode Admin</h1>
+ <div class="card lock" id="gA"><b>Menu ini hanya untuk Admin</b><p class="mut">Masukkan PIN untuk mengelola area, PIN, dan melengkapi temuan.</p><button class="btn" onclick="openPin('admin')">Masuk Mode Admin</button></div>
+ <div class="card" id="cA"><p>Ketuk temuan di menu Daftar untuk melengkapi Category, PIC, Status, mengganti area, atau menghapus.</p>
+  <label>Tambah area baru</label><input id="aN" placeholder="Nama area"><input id="aM" placeholder="Mill (mis. FINISHING PF 1)" style="margin-top:8px"><button class="btn" onclick="tambahArea()">Tambah Area</button>
+  <label>PIN lama</label><input id="pOld" type="password" inputmode="numeric" maxlength="6">
+  <label>PIN baru (6 digit)</label><input id="pNew" type="password" inputmode="numeric" maxlength="6">
+  <button class="btn" onclick="gantiPin()">Simpan PIN Baru</button>
+  <button class="btn ghost" onclick="keluarAdmin()">Keluar Mode Admin</button></div>
+</section>
+</main>
+<nav class="nav"><a onclick="navigateTo('input')" data-s="input">Input</a><a onclick="navigateTo('daftar')" data-s="daftar">Daftar</a><a onclick="navigateTo('unduh')" data-s="unduh">Unduh</a><a onclick="navigateTo('admin')" data-s="admin">Admin</a></nav>
+
+<div class="modal" id="mPin"><div class="sheet"><h2>Masuk Mode Admin</h2><p class="mut">Masukkan 6 digit PIN.</p>
+ <input id="pin" type="password" inputmode="numeric" maxlength="6" autocomplete="off" class="pin">
+ <div class="row"><button class="btn ghost" onclick="closeM('mPin')">Batal</button><button class="btn" onclick="loginAdmin()">Buka Kunci</button></div></div></div>
+<div class="modal" id="mEdit"><div class="sheet"><h2>Lengkapi Temuan</h2>
+ <label>Area / Lokasi</label><select id="eA"></select>
+ <label>Finding Category</label><div class="row"><select id="eK"></select><input id="eN" type="number" min="1" placeholder="No. (mis. 5)"></div>
+ <label>PIC</label><input id="eP"><label>Status</label><select id="eS"><option>Open</option><option>Close</option></select>
+ <div class="row"><button class="btn ghost" onclick="closeM('mEdit')">Batal</button><button class="btn" onclick="simpanEdit()">Simpan</button></div>
+ <button class="btn danger" onclick="hapus()">Hapus Temuan</button></div></div>
+<div class="modal z" id="mZoom" onclick="closeM('mZoom')"><img id="zImg" alt="Foto"></div>
+<div class="prev" id="mPrev"><div class="pbar"><button class="btn ghost" onclick="closeM('mPrev')">Tutup</button><button class="btn" onclick="closeM('mPrev');unduh()">Siapkan Dokumen</button></div><div id="prevBody"></div></div>
+<div id="toast"></div>
+<?!= include('JavaScript') ?></body></html>

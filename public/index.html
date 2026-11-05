@@ -2,9 +2,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Jejak Temuan 6S</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1E3A8A">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
 <link rel="stylesheet" href="style.css"></head><body>
 <header class="bar"><div class="brand"><img class="logo" id="lg" alt="6S"><div><b>Jejak Temuan 6S</b><small>FINISHING MILL</small></div></div>
-<button class="btn ghost" id="btnAdm" onclick="openPin('admin')">Admin</button></header>
+<div class="hb"><button class="btn ghost" id="btnInstall" style="display:none" onclick="pasangApp()">Pasang</button><button class="btn ghost" id="btnAdm" onclick="openPin('admin')">Admin</button></div></header>
 <main>
 <section id="sec-input" class="sec on">
  <h1>Input Temuan</h1><p class="mut">Isi temuan, lalu upload foto Before dan/atau After (salah satu sudah cukup).</p>

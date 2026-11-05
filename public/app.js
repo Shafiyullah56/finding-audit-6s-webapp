@@ -209,3 +209,10 @@ function unduh() {
 }
 $('pin').addEventListener('keydown', e => { if (e.key === 'Enter') loginAdmin(); });
 document.addEventListener('DOMContentLoaded', init);
+
+// ═ PWA: tombol "Pasang" & pendaftaran service worker ═
+let tundaPasang = null;
+window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); tundaPasang = e; $('btnInstall').style.display = ''; });
+window.addEventListener('appinstalled', () => { $('btnInstall').style.display = 'none'; toast('Aplikasi terpasang'); });
+function pasangApp() { if (!tundaPasang) return; tundaPasang.prompt(); tundaPasang.userChoice.finally(() => { tundaPasang = null; $('btnInstall').style.display = 'none'; }); }
+if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));

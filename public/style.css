@@ -54,3 +54,4 @@ main{max-width:980px}.nav{justify-content:center}.nav a{max-width:240px}
 .it .ph>*{min-width:0}.it img{cursor:zoom-in}
 .add{display:grid;place-items:center;width:50%;aspect-ratio:4/3;margin:0!important;border:2px dashed var(--mu);border-radius:4px;color:var(--navy);font-weight:600;font-size:13px;text-align:center;cursor:pointer}
 .modal.z{align-items:center;justify-content:center;background:rgba(15,23,42,.8)}#zImg{max-width:96%;max-height:92vh;border-radius:8px}
+.hb{display:flex;gap:8px}

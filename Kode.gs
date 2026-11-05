@@ -188,7 +188,7 @@ const HDR = ['No', 'Remark of finding', 'Location', 'Finding Category (FP, R1-5+
 function fit_(im, mw, mh) { const k = Math.min(mw / im.getWidth(), mh / im.getHeight()); im.setWidth(Math.round(im.getWidth() * k)).setHeight(Math.round(im.getHeight() * k)); }
 function cell_(c, txt, o) {
   o = o || {}; const p = c.getChild(0).asParagraph();
-  p.setText(txt == null ? '' : String(txt));
+  const s = txt == null ? '' : String(txt); if (s) p.setText(s); // setText('') menyebabkan error pada Google Docs
   p.setSpacingBefore(0).setSpacingAfter(0).setAlignment(o.al || DocumentApp.HorizontalAlignment.CENTER);
   if (p.getText()) p.editAsText().setFontFamily('Arial').setFontSize(o.sz || 9).setBold(!!o.b).setForegroundColor(o.fg || '#000000');
   c.setVerticalAlignment(DocumentApp.VerticalAlignment.CENTER).setPaddingTop(3).setPaddingBottom(3).setPaddingLeft(4).setPaddingRight(4);

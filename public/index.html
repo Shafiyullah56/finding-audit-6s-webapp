@@ -18,12 +18,16 @@
   <div class="two">
    <div class="fz"><div class="phh">Foto Before <span class="mut">(opsional)</span></div>
     <div class="drop" id="dz-b" data-k="b" tabindex="0"><img id="pv-b" alt=""><div class="hint"><b>Seret &amp; lepas foto di sini</b><br><small>atau klik kotak ini lalu tekan Ctrl+V untuk menempel</small></div></div>
+    <label class="btn cam" for="kb">Ambil Foto dengan Kamera</label>
     <div class="pbtn"><label class="btn ghost" for="fb">Pilih File</label><button class="btn ghost" type="button" onclick="tempel('b')">Tempel</button><button class="btn ghost" type="button" onclick="hapusFoto('b')">Hapus</button></div>
-    <input type="file" id="fb" data-k="b" accept="image/*" hidden onchange="pilih(this)"></div>
+    <input type="file" id="fb" data-k="b" accept="image/*" hidden onchange="pilih(this)">
+    <input type="file" id="kb" data-k="b" accept="image/*" capture="environment" hidden onchange="pilih(this)"></div>
    <div class="fz"><div class="phh">Foto After <span class="mut">(opsional)</span></div>
     <div class="drop" id="dz-a" data-k="a" tabindex="0"><img id="pv-a" alt=""><div class="hint"><b>Seret &amp; lepas foto di sini</b><br><small>atau klik kotak ini lalu tekan Ctrl+V untuk menempel</small></div></div>
+    <label class="btn cam" for="ka">Ambil Foto dengan Kamera</label>
     <div class="pbtn"><label class="btn ghost" for="fa">Pilih File</label><button class="btn ghost" type="button" onclick="tempel('a')">Tempel</button><button class="btn ghost" type="button" onclick="hapusFoto('a')">Hapus</button></div>
-    <input type="file" id="fa" data-k="a" accept="image/*" hidden onchange="pilih(this)"></div>
+    <input type="file" id="fa" data-k="a" accept="image/*" hidden onchange="pilih(this)">
+    <input type="file" id="ka" data-k="a" accept="image/*" capture="environment" hidden onchange="pilih(this)"></div>
   </div>
   <p class="info">Foto dikompres otomatis. Foto yang belum ada bisa ditambahkan nanti dari menu Daftar.</p>
   <button class="btn" id="btnSave" onclick="simpan()">Simpan Temuan</button>

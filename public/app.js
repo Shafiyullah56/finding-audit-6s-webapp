@@ -91,7 +91,12 @@ document.querySelectorAll('.drop').forEach(z => {
 window.addEventListener('dragover', e => e.preventDefault()); window.addEventListener('drop', e => e.preventDefault());
 document.addEventListener('paste', e => {
   const f = [...((e.clipboardData && e.clipboardData.files) || [])].find(isImg);
-  if (!f || !$('sec-input').classList.contains('on')) return;
+  if (!f) return;
+  if ($('sec-daftar').classList.contains('on')) {
+    e.preventDefault(); const za = document.activeElement && document.activeElement.closest ? document.activeElement.closest('.add') : null, ta = za ? { id: za.dataset.id, k: za.dataset.k } : S.addTarget;
+    return ta ? bukaCropTambah(ta.id, ta.k, f) : toast('Arahkan kursor atau klik kotak foto yang kosong, lalu tempel.', false);
+  }
+  if (!$('sec-input').classList.contains('on')) return;
   e.preventDefault(); const z = document.activeElement && document.activeElement.closest ? document.activeElement.closest('.drop') : null;
   setPhoto(z ? z.dataset.k : (!photos.b ? 'b' : !photos.a ? 'a' : S.zone), f);
 });
@@ -115,9 +120,10 @@ function simpan() {
 function debounceRender() { clearTimeout(tmr); tmr = setTimeout(renderList, 250); }
 function zoom(id) { $('zImg').src = thumb(id, 1200); $('mZoom').classList.add('on'); }
 function slot(t, k) {
-  const id = k === 'b' ? t.FotoBefore : t.FotoAfter, lb = k === 'b' ? 'Before' : 'After';
+  const id = k === 'b' ? t.FotoBefore : t.FotoAfter, lb = k === 'b' ? 'Before' : 'After', ik = 'ad' + t.ID + k;
   return id ? '<img loading="lazy" src="' + thumb(id) + '" alt="' + lb + '" onclick="zoom(\'' + id + '\')">'
-    : '<label class="add" for="ad' + t.ID + k + '">+ Tambah foto ' + lb + '</label><input type="file" id="ad' + t.ID + k + '" accept="image/*" hidden onchange="addPhoto(\'' + t.ID + '\',\'' + k + '\',this)">';
+    : '<div class="add" tabindex="0" data-id="' + t.ID + '" data-k="' + k + '"><b>+ Foto ' + lb + '</b><small>Seret &amp; lepas, atau klik lalu Ctrl+V</small><span class="ab"><label for="' + ik + '">Pilih File</label><button type="button" onclick="tempelAdd(\'' + t.ID + '\',\'' + k + '\')">Tempel</button></span></div>'
+    + '<input type="file" id="' + ik + '" data-id="' + t.ID + '" data-k="' + k + '" accept="image/*" hidden onchange="pilihTambah(this)">';
 }
 function renderList() {
   const qr = $('q').value.trim(), q = qr.toLowerCase(), fs = $('fs').value, hl = s => hlText(s, qr);
@@ -132,14 +138,36 @@ function renderList() {
   }).join('');
   $('list').innerHTML = html || '<div class="card">Belum ada temuan.</div>';
 }
-function addPhoto(id, k, inp) {
-  const f = inp.files[0]; if (!isImg(f)) return; toast('Mengunggah foto…');
-  compress(f).then(d => google.script.run.withSuccessHandler(r => {
+function bukaCropTambah(id, k, f) {
+  if (!isImg(f)) return toast('File harus berupa gambar.', false);
+  openCrop(k, f, { id: id, k: k });
+}
+function pilihTambah(inp) { const f = inp.files[0]; inp.value = ''; if (f) bukaCropTambah(inp.dataset.id, inp.dataset.k, f); }
+async function tempelAdd(id, k) {
+  try {
+    for (const it of await navigator.clipboard.read()) {
+      const ty = it.types.find(x => x.indexOf('image/') === 0);
+      if (ty) return bukaCropTambah(id, k, new File([await it.getType(ty)], 'tempel.png', { type: ty }));
+    }
+    toast('Tidak ada gambar di clipboard.', false);
+  } catch (e) { toast('Tombol Tempel diblokir browser. Klik kotak foto lalu tekan Ctrl+V.', false); }
+}
+function kirimTambah(id, k, d) {
+  toast('Mengunggah foto…');
+  google.script.run.withSuccessHandler(r => {
     if (!r.success) return toast(r.message, false);
     const t = S.temuan.find(x => x.ID === id); if (t) { if (k === 'b') t.FotoBefore = r.data.id; else t.FotoAfter = r.data.id; }
     renderList(); toast('Foto ditambahkan');
-  }).withFailureHandler(e => toast(e.message, false)).tambahFoto(id, k === 'b' ? 'before' : 'after', d.split(',')[1])).catch(() => toast('Foto tidak bisa dibaca.', false));
+  }).withFailureHandler(e => toast(e.message, false)).tambahFoto(id, k === 'b' ? 'before' : 'after', d.split(',')[1]);
 }
+const lst = $('list'), tgtAdd = e => { const z = e.target.closest ? e.target.closest('.add') : null; return z ? { z: z, id: z.dataset.id, k: z.dataset.k } : null; };
+lst.addEventListener('dragover', e => { const t = tgtAdd(e); if (t) { e.preventDefault(); t.z.classList.add('over'); } });
+lst.addEventListener('dragleave', e => { const t = tgtAdd(e); if (t) t.z.classList.remove('over'); });
+lst.addEventListener('drop', e => {
+  const t = tgtAdd(e); if (!t) return; e.preventDefault(); t.z.classList.remove('over');
+  const f = [...e.dataTransfer.files].find(isImg); f ? bukaCropTambah(t.id, t.k, f) : toast('Seret file gambar, atau salin gambar lalu tekan Ctrl+V.', false);
+});
+['focusin', 'pointerover'].forEach(ev => lst.addEventListener(ev, e => { const t = tgtAdd(e); if (t) S.addTarget = { id: t.id, k: t.k }; }));
 
 // ═ ADMIN (PIN) ═
 function openPin(next) { S.next = next || 'admin'; if (S.pin) return navigateTo(S.next); $('pin').value = ''; $('mPin').classList.add('on'); $('pin').focus(); }
@@ -217,13 +245,13 @@ document.addEventListener('DOMContentLoaded', init);
 // ═ CROP FOTO MANUAL (mouse & sentuh, sama di semua perangkat) ═
 const C = { k: null, src: null, W: 0, H: 0, sel: null, ratio: 0, drag: null };
 const cvs = $('cvs');
-function openCrop(k, file) {
+function openCrop(k, file, tgt) {
   const im = new Image(), u = URL.createObjectURL(file);
   im.onload = () => {
     URL.revokeObjectURL(u);
     const m = Math.min(1, 2400 / Math.max(im.width, im.height)), c = document.createElement('canvas');
     c.width = Math.round(im.width * m); c.height = Math.round(im.height * m); c.getContext('2d').drawImage(im, 0, 0, c.width, c.height);
-    C.k = k; C.src = c; C.ratio = 0; $('mCrop').classList.add('on'); layoutCrop();
+    C.k = k; C.t = tgt || null; C.src = c; C.ratio = 0; $('mCrop').classList.add('on'); layoutCrop();
   };
   im.onerror = () => { URL.revokeObjectURL(u); toast('Foto tidak bisa dibaca.', false); };
   im.src = u;
@@ -276,13 +304,15 @@ function cropRotate() {
   const s = C.src, c = document.createElement('canvas'); c.width = s.height; c.height = s.width;
   const g = c.getContext('2d'); g.translate(c.width, 0); g.rotate(Math.PI / 2); g.drawImage(s, 0, 0); C.src = c; layoutCrop();
 }
-function cropCancel() { closeM('mCrop'); C.src = null; }
+function cropCancel() { closeM('mCrop'); C.src = null; C.t = null; }
 function cropDone(full) {
   const s = C.sel, f = C.src.width / C.W, out = document.createElement('canvas');
   const sx = full ? 0 : s.x * f, sy = full ? 0 : s.y * f, sw = full ? C.src.width : s.w * f, sh = full ? C.src.height : s.h * f;
   const m = Math.min(1, 1280 / Math.max(sw, sh)); out.width = Math.max(1, Math.round(sw * m)); out.height = Math.max(1, Math.round(sh * m));
   out.getContext('2d').drawImage(C.src, sx, sy, sw, sh, 0, 0, out.width, out.height);
-  const d = out.toDataURL('image/jpeg', .72); photos[C.k] = d.split(',')[1]; $('pv-' + C.k).src = d; $('dz-' + C.k).classList.add('has');
+  const d = out.toDataURL('image/jpeg', .72);
+  if (C.t) { const t = C.t; closeM('mCrop'); C.src = null; C.t = null; return kirimTambah(t.id, t.k, d); }
+  photos[C.k] = d.split(',')[1]; $('pv-' + C.k).src = d; $('dz-' + C.k).classList.add('has');
   S.zone = C.k; closeM('mCrop'); C.src = null;
 }
 

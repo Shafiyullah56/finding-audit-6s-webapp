@@ -59,3 +59,9 @@ mark{background:#FFEB3B;color:#000;border-radius:2px;padding:0 1px}
 .sheet{max-height:92vh;overflow:auto}.ef img{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:4px}.ef .btn{margin-top:8px;min-height:40px;line-height:40px;font-size:14px}
 .modal.c{align-items:center;background:rgba(15,23,42,.7)}.cs{text-align:center;max-width:960px;border-radius:12px}
 #cvs{display:block;margin:10px auto;touch-action:none;max-width:100%;border-radius:4px;cursor:crosshair;background:#000}
+.it .ph{align-items:flex-start}
+.add{aspect-ratio:auto;min-height:130px;align-content:center;gap:4px;padding:6px;text-align:center;cursor:default}
+.add b{font-size:13px;color:var(--navy)}.add small{font-size:11px;color:var(--mu);line-height:1.25}
+.ab{display:flex;flex-direction:column;gap:4px;width:100%;margin-top:4px}
+.ab label,.ab button{display:block;margin:0;border:1px solid var(--bd);background:#fff;color:var(--navy);border-radius:4px;font:600 13px Inter,Arial;min-height:40px;line-height:38px;cursor:pointer}
+.add.over{border-color:var(--navy);background:#EEF2FF}.add:focus{outline:2px solid var(--navy);outline-offset:2px}

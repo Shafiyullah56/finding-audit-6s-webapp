@@ -69,7 +69,7 @@ function compress(file) {
 }
 function setPhoto(k, f) {
   if (!isImg(f)) return toast('File harus berupa gambar.', false);
-  compress(f).then(d => { photos[k] = d.split(',')[1]; $('pv-' + k).src = d; $('dz-' + k).classList.add('has'); S.zone = k; }).catch(() => toast('Foto tidak bisa dibaca.', false));
+  openCrop(k, f);
 }
 function pilih(inp) { setPhoto(inp.dataset.k, inp.files[0]); inp.value = ''; }
 function hapusFoto(k) { photos[k] = null; $('pv-' + k).removeAttribute('src'); $('dz-' + k).classList.remove('has'); }
@@ -120,14 +120,14 @@ function slot(t, k) {
     : '<label class="add" for="ad' + t.ID + k + '">+ Tambah foto ' + lb + '</label><input type="file" id="ad' + t.ID + k + '" accept="image/*" hidden onchange="addPhoto(\'' + t.ID + '\',\'' + k + '\',this)">';
 }
 function renderList() {
-  const q = $('q').value.toLowerCase(), fs = $('fs').value;
+  const qr = $('q').value.trim(), q = qr.toLowerCase(), fs = $('fs').value, hl = s => hlText(s, qr);
   $('sT').textContent = S.temuan.length; $('sO').textContent = S.temuan.filter(t => t.Status !== 'Close').length; $('sC').textContent = S.temuan.filter(t => t.Status === 'Close').length;
   const open = new Set([...document.querySelectorAll('.grp.open')].map(g => g.dataset.a));
   const html = S.areas.map(a => {
-    const its = S.temuan.filter(t => t.AreaID === a.ID && (!fs || t.Status === fs) && (!q || (t.Remark + a.Nama + t.PIC).toLowerCase().includes(q))).sort(byNo);
+    const its = S.temuan.filter(t => t.AreaID === a.ID && (!fs || t.Status === fs) && (!q || (t.Remark + ' ' + a.Nama + ' ' + t.PIC + ' ' + t.Kategori).toLowerCase().includes(q))).sort(byNo);
     if (!its.length) return '';
-    return '<div class="grp ' + (open.has(a.ID) || q ? 'open' : '') + '" data-a="' + esc(a.ID) + '"><div class="gh" onclick="this.parentNode.classList.toggle(\'open\')"><span>' + esc(a.Nama) + '</span><span class="pill">' + its.length + ' temuan</span></div><div class="gb">' +
-      its.map(t => '<div class="it ' + (t.Status === 'Close' ? 'cl' : '') + '"><b>#' + esc(t.No) + '</b> <span class="st ' + (t.Status === 'Close' ? 'c' : '') + '">' + esc(t.Status) + '</span> <span class="meta">' + esc(String(t.Tanggal).slice(0, 10)) + '</span><p>' + esc(t.Remark) + '</p><div class="ph">' + slot(t, 'b') + slot(t, 'a') + '</div><div class="meta">Kategori: ' + esc(t.Kategori || '—') + ' • PIC: ' + esc(t.PIC || '—') + '</div>' +
+    return '<div class="grp ' + (open.has(a.ID) || q ? 'open' : '') + '" data-a="' + esc(a.ID) + '"><div class="gh" onclick="this.parentNode.classList.toggle(\'open\')"><span>' + hl(a.Nama) + '</span><span class="pill">' + its.length + ' temuan</span></div><div class="gb">' +
+      its.map(t => '<div class="it ' + (t.Status === 'Close' ? 'cl' : '') + '"><b>#' + esc(t.No) + '</b> <span class="st ' + (t.Status === 'Close' ? 'c' : '') + '">' + esc(t.Status) + '</span> <span class="meta">' + esc(String(t.Tanggal).slice(0, 10)) + '</span><p>' + hl(t.Remark) + '</p><div class="ph">' + slot(t, 'b') + slot(t, 'a') + '</div><div class="meta">Kategori: ' + (t.Kategori ? hl(t.Kategori) : '—') + ' • PIC: ' + (t.PIC ? hl(t.PIC) : '—') + '</div>' +
         (S.pin ? '<button onclick="bukaEdit(\'' + t.ID + '\')">Lengkapi / Edit</button>' : '') + '</div>').join('') + '</div></div>';
   }).join('');
   $('list').innerHTML = html || '<div class="card">Belum ada temuan.</div>';
@@ -161,11 +161,12 @@ function tambahArea() {
 function bukaEdit(id) {
   const t = S.temuan.find(x => x.ID === id); if (!t) return; S.editId = id;
   const m = /^([A-Z]+\d?)-?(\d*)$/.exec(t.Kategori || '') || [];
-  $('eA').value = t.AreaID; $('eK').value = m[1] || ''; $('eN').value = m[2] || ''; $('eP').value = t.PIC || ''; $('eS').value = t.Status || 'Open'; $('mEdit').classList.add('on');
+  $('eA').value = t.AreaID; $('eR').value = t.Remark || ''; renderEditFoto(t); $('eK').value = m[1] || ''; $('eN').value = m[2] || ''; $('eP').value = t.PIC || ''; $('eS').value = t.Status || 'Open'; $('mEdit').classList.add('on');
 }
 function simpanEdit() {
   const t = S.temuan.find(x => x.ID === S.editId), k = $('eK').value, n = $('eN').value;
-  const f = { AreaID: $('eA').value, Kategori: k ? k + (n ? '-' + n : '') : '', PIC: $('eP').value.trim(), Status: $('eS').value }, old = Object.assign({}, t);
+  if ($('eR').value.trim().length < 5) return toast('Remark minimal 5 karakter.', false);
+  const f = { Remark: $('eR').value.trim(), AreaID: $('eA').value, Kategori: k ? k + (n ? '-' + n : '') : '', PIC: $('eP').value.trim(), Status: $('eS').value }, old = Object.assign({}, t);
   Object.assign(t, f); closeM('mEdit'); renderList();
   google.script.run.withSuccessHandler(r => {
     if (!r.success) { Object.assign(t, old); renderList(); return toast(r.message, false); }
@@ -202,13 +203,118 @@ function unduh() {
   const o = readX(); if (!o.areaIds.length) return toast('Pilih minimal satu area.', false);
   const b = $('btnX'); b.disabled = true; b.textContent = 'Menyiapkan dokumen… (bisa 1 menit)'; $('xLink').style.display = 'none';
   google.script.run.withSuccessHandler(r => {
-    b.disabled = false; b.textContent = 'Siapkan Dokumen';
+    b.disabled = false; b.textContent = 'Buka / Unduh Dokumen';
     if (!r.success) return toast(r.message, false);
-    $('xLink').href = r.data.url; $('xLink').style.display = 'block'; toast('Dokumen siap');
-  }).withFailureHandler(e => { b.disabled = false; b.textContent = 'Siapkan Dokumen'; toast(e.message, false); }).exportHasil(S.pin, o);
+    $('xLink').href = r.data.url; $('xLink').style.display = 'block'; $('xLink').textContent = o.format === 'gdoc' ? 'Buka Google Doc' : 'Belum terunduh? Klik di sini';
+    if (o.format === 'gdoc') window.open(r.data.url, '_blank');
+    else if (r.data.b64) { simpanBlob(r.data.name, r.data.b64); toast('Dokumen terunduh & tersimpan di folder Unduhan Drive'); }
+    else { window.open(r.data.url, '_blank'); toast('Dokumen siap, tersimpan di folder Unduhan Drive'); }
+  }).withFailureHandler(e => { b.disabled = false; b.textContent = 'Buka / Unduh Dokumen'; toast(e.message, false); }).exportHasil(S.pin, o);
 }
 $('pin').addEventListener('keydown', e => { if (e.key === 'Enter') loginAdmin(); });
 document.addEventListener('DOMContentLoaded', init);
+
+// ═ CROP FOTO MANUAL (mouse & sentuh, sama di semua perangkat) ═
+const C = { k: null, src: null, W: 0, H: 0, sel: null, ratio: 0, drag: null };
+const cvs = $('cvs');
+function openCrop(k, file) {
+  const im = new Image(), u = URL.createObjectURL(file);
+  im.onload = () => {
+    URL.revokeObjectURL(u);
+    const m = Math.min(1, 2400 / Math.max(im.width, im.height)), c = document.createElement('canvas');
+    c.width = Math.round(im.width * m); c.height = Math.round(im.height * m); c.getContext('2d').drawImage(im, 0, 0, c.width, c.height);
+    C.k = k; C.src = c; C.ratio = 0; $('mCrop').classList.add('on'); layoutCrop();
+  };
+  im.onerror = () => { URL.revokeObjectURL(u); toast('Foto tidak bisa dibaca.', false); };
+  im.src = u;
+}
+function layoutCrop() {
+  const s = Math.min(Math.min(window.innerWidth - 56, 880) / C.src.width, (window.innerHeight * 0.55) / C.src.height);
+  C.W = cvs.width = Math.max(60, Math.round(C.src.width * s)); C.H = cvs.height = Math.max(60, Math.round(C.src.height * s));
+  setSel(C.ratio);
+}
+function setSel(r) {
+  C.ratio = r; let w = C.W * .94, h = C.H * .94;
+  if (r) { if (w / h > r) w = h * r; else h = w / r; }
+  C.sel = { x: (C.W - w) / 2, y: (C.H - h) / 2, w: w, h: h }; drawCrop();
+}
+const corners = () => { const s = C.sel; return [[s.x, s.y], [s.x + s.w, s.y], [s.x, s.y + s.h], [s.x + s.w, s.y + s.h]]; };
+function drawCrop() {
+  const g = cvs.getContext('2d'), s = C.sel;
+  g.clearRect(0, 0, C.W, C.H); g.drawImage(C.src, 0, 0, C.W, C.H);
+  g.fillStyle = 'rgba(0,0,0,.55)';
+  g.fillRect(0, 0, C.W, s.y); g.fillRect(0, s.y + s.h, C.W, C.H - s.y - s.h); g.fillRect(0, s.y, s.x, s.h); g.fillRect(s.x + s.w, s.y, C.W - s.x - s.w, s.h);
+  g.strokeStyle = '#fff'; g.lineWidth = 2; g.strokeRect(s.x, s.y, s.w, s.h);
+  g.lineWidth = 1; g.strokeStyle = 'rgba(255,255,255,.5)';
+  for (let i = 1; i < 3; i++) { g.beginPath(); g.moveTo(s.x + s.w * i / 3, s.y); g.lineTo(s.x + s.w * i / 3, s.y + s.h); g.moveTo(s.x, s.y + s.h * i / 3); g.lineTo(s.x + s.w, s.y + s.h * i / 3); g.stroke(); }
+  g.fillStyle = '#fff'; g.strokeStyle = '#1E3A8A'; g.lineWidth = 2;
+  corners().forEach(p => { g.fillRect(p[0] - 9, p[1] - 9, 18, 18); g.strokeRect(p[0] - 9, p[1] - 9, 18, 18); });
+}
+function cpos(e) { const r = cvs.getBoundingClientRect(); return [(e.clientX - r.left) * C.W / r.width, (e.clientY - r.top) * C.H / r.height]; }
+cvs.addEventListener('pointerdown', e => {
+  const p = cpos(e), s = C.sel, cs = corners(), hit = cs.findIndex(c => Math.abs(c[0] - p[0]) < 26 && Math.abs(c[1] - p[1]) < 26);
+  if (hit >= 0) C.drag = { t: 'r', ax: cs[3 - hit][0], ay: cs[3 - hit][1] };
+  else if (p[0] > s.x && p[0] < s.x + s.w && p[1] > s.y && p[1] < s.y + s.h) C.drag = { t: 'm', dx: p[0] - s.x, dy: p[1] - s.y };
+  else return;
+  cvs.setPointerCapture(e.pointerId); e.preventDefault();
+});
+cvs.addEventListener('pointermove', e => {
+  if (!C.drag) return; const p = cpos(e), d = C.drag, s = C.sel;
+  if (d.t === 'm') { s.x = Math.min(Math.max(0, p[0] - d.dx), C.W - s.w); s.y = Math.min(Math.max(0, p[1] - d.dy), C.H - s.h); }
+  else {
+    const sx = p[0] >= d.ax ? 1 : -1, sy = p[1] >= d.ay ? 1 : -1;
+    let w = Math.min(Math.abs(p[0] - d.ax), sx > 0 ? C.W - d.ax : d.ax), h = Math.min(Math.abs(p[1] - d.ay), sy > 0 ? C.H - d.ay : d.ay);
+    if (C.ratio) { if (w / Math.max(h, 1) > C.ratio) w = h * C.ratio; else h = w / C.ratio; }
+    w = Math.max(w, 30); h = Math.max(h, 30);
+    C.sel = { x: Math.max(0, Math.min(sx > 0 ? d.ax : d.ax - w, C.W - w)), y: Math.max(0, Math.min(sy > 0 ? d.ay : d.ay - h, C.H - h)), w: w, h: h };
+  }
+  drawCrop();
+});
+['pointerup', 'pointercancel'].forEach(t => cvs.addEventListener(t, () => { C.drag = null; }));
+function cropRatio(r) { setSel(r); }
+function cropRotate() {
+  const s = C.src, c = document.createElement('canvas'); c.width = s.height; c.height = s.width;
+  const g = c.getContext('2d'); g.translate(c.width, 0); g.rotate(Math.PI / 2); g.drawImage(s, 0, 0); C.src = c; layoutCrop();
+}
+function cropCancel() { closeM('mCrop'); C.src = null; }
+function cropDone(full) {
+  const s = C.sel, f = C.src.width / C.W, out = document.createElement('canvas');
+  const sx = full ? 0 : s.x * f, sy = full ? 0 : s.y * f, sw = full ? C.src.width : s.w * f, sh = full ? C.src.height : s.h * f;
+  const m = Math.min(1, 1280 / Math.max(sw, sh)); out.width = Math.max(1, Math.round(sw * m)); out.height = Math.max(1, Math.round(sh * m));
+  out.getContext('2d').drawImage(C.src, sx, sy, sw, sh, 0, 0, out.width, out.height);
+  const d = out.toDataURL('image/jpeg', .72); photos[C.k] = d.split(',')[1]; $('pv-' + C.k).src = d; $('dz-' + C.k).classList.add('has');
+  S.zone = C.k; closeM('mCrop'); C.src = null;
+}
+
+// ═ Sorot kata pencarian ═
+function hlText(s, q) {
+  s = String(s == null ? '' : s); if (!q) return esc(s);
+  const re = new RegExp('(' + q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
+  return s.split(re).map((p, i) => i % 2 ? '<mark>' + esc(p) + '</mark>' : esc(p)).join('');
+}
+
+// ═ Admin: foto pada form edit ═
+function renderEditFoto(t) {
+  $('eFoto').innerHTML = [['b', 'Before', t.FotoBefore], ['a', 'After', t.FotoAfter]].map(p => p[2]
+    ? '<div class="ef"><img src="' + thumb(p[2]) + '" alt="' + p[1] + '"><button class="btn danger" type="button" onclick="hapusFotoAdmin(\'' + p[0] + '\')">Hapus foto ' + p[1] + '</button></div>'
+    : '<div class="ef mut">Foto ' + p[1] + ' belum ada</div>').join('');
+}
+function hapusFotoAdmin(k) {
+  const t = S.temuan.find(x => x.ID === S.editId); if (!t) return; const lb = k === 'b' ? 'Before' : 'After';
+  if (!confirm('Hapus foto ' + lb + ' dari temuan #' + t.No + '?')) return;
+  google.script.run.withSuccessHandler(r => {
+    if (!r.success) return toast(r.message, false);
+    if (k === 'b') t.FotoBefore = ''; else t.FotoAfter = '';
+    renderEditFoto(t); renderList(); toast('Foto ' + lb + ' dihapus');
+  }).withFailureHandler(e => toast(e.message, false)).hapusFotoTemuan(S.pin, S.editId, k === 'b' ? 'before' : 'after');
+}
+
+// ═ Unduh otomatis ke perangkat ═
+function simpanBlob(name, b64) {
+  const bin = atob(b64), u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
+  const url = URL.createObjectURL(new Blob([u])), a = document.createElement('a');
+  a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 60000);
+}
 
 // ═ PWA: tombol "Pasang" & pendaftaran service worker ═
 let tundaPasang = null;

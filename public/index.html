@@ -55,7 +55,7 @@
   <label><input type="radio" name="fmt" value="gdoc"> Google Doc</label>
   <label><input type="radio" name="fmt" value="pdf"> PDF</label></div>
   <button class="btn ghost" onclick="preview()">Pratinjau Tabel</button>
-  <button class="btn" id="btnX" onclick="unduh()">Siapkan Dokumen</button>
+  <button class="btn" id="btnX" onclick="unduh()">Buka / Unduh Dokumen</button>
   <a id="xLink" class="btn ghost" style="display:none" target="_blank" rel="noopener">Buka / Unduh Berkas</a>
  </div>
 </section>
@@ -77,12 +77,18 @@
  <div class="row"><button class="btn ghost" onclick="closeM('mPin')">Batal</button><button class="btn" onclick="loginAdmin()">Buka Kunci</button></div></div></div>
 <div class="modal" id="mEdit"><div class="sheet"><h2>Lengkapi Temuan</h2>
  <label>Area / Lokasi</label><select id="eA"></select>
+ <label>Remark of Finding</label><textarea id="eR" maxlength="250"></textarea>
+ <label>Foto</label><div id="eFoto" class="two"></div>
  <label>Finding Category</label><div class="row"><select id="eK"></select><input id="eN" type="number" min="1" placeholder="No. (mis. 5)"></div>
  <label>PIC</label><input id="eP"><label>Status</label><select id="eS"><option>Open</option><option>Close</option></select>
  <div class="row"><button class="btn ghost" onclick="closeM('mEdit')">Batal</button><button class="btn" onclick="simpanEdit()">Simpan</button></div>
  <button class="btn danger" onclick="hapus()">Hapus Temuan</button></div></div>
 <div class="modal z" id="mZoom" onclick="closeM('mZoom')"><img id="zImg" alt="Foto"></div>
-<div class="prev" id="mPrev"><div class="pbar"><button class="btn ghost" onclick="closeM('mPrev')">Tutup</button><button class="btn" onclick="closeM('mPrev');unduh()">Siapkan Dokumen</button></div><div id="prevBody"></div></div>
+<div class="prev" id="mPrev"><div class="pbar"><button class="btn ghost" onclick="closeM('mPrev')">Tutup</button><button class="btn" onclick="closeM('mPrev');unduh()">Buka / Unduh Dokumen</button></div><div id="prevBody"></div></div>
+<div class="modal c" id="mCrop"><div class="sheet cs"><h2>Potong Foto</h2><p class="mut">Geser kotak atau tarik sudutnya untuk memotong foto.</p>
+ <canvas id="cvs"></canvas>
+ <div class="pbtn"><button class="btn ghost" type="button" onclick="cropRatio(0)">Bebas</button><button class="btn ghost" type="button" onclick="cropRatio(4/3)">4:3</button><button class="btn ghost" type="button" onclick="cropRatio(1)">1:1</button><button class="btn ghost" type="button" onclick="cropRotate()">Putar</button></div>
+ <div class="row"><button class="btn ghost" onclick="cropCancel()">Batal</button><button class="btn ghost" onclick="cropDone(true)">Pakai Foto Utuh</button><button class="btn" onclick="cropDone(false)">Selesai</button></div></div></div>
 <div id="toast"></div>
 <script src="config.js"></script>
 <script src="app.js"></script></body></html>

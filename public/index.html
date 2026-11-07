@@ -66,7 +66,7 @@
 <section id="sec-admin" class="sec">
  <h1>Mode Admin</h1>
  <div class="card lock" id="gA"><b>Menu ini hanya untuk Admin</b><p class="mut">Masukkan PIN untuk mengelola area, PIN, dan melengkapi temuan.</p><button class="btn" onclick="openPin('admin')">Masuk Mode Admin</button></div>
- <div class="card" id="cA"><h2>Kelola Form</h2><div id="fAdmin"></div><button class="btn" onclick="bukaFormModal()">Tambah Form Baru</button><hr><p>Ketuk temuan di menu Daftar untuk melengkapi Category, PIC, Status, mengganti area, atau menghapus.</p>
+ <div class="card" id="cA"><h2>Kelola Form</h2><div id="fAdmin"></div><button class="btn" onclick="bukaFormModal()">Tambah Form Baru</button><hr><h2>Perawatan</h2><p class="mut">Merapikan foto di Google Drive: foto lama dan foto di folder yang salah dipindah ke folder form dan area yang benar, lalu dinamai ulang. Tidak ada foto yang dihapus.</p><button class="btn ghost" id="btnRapi" onclick="rapikanFoto()">Rapikan Folder Foto</button><hr><p>Ketuk temuan di menu Daftar untuk melengkapi Category, PIC, Status, mengganti area, atau menghapus.</p>
   <label>Tambah area baru</label><input id="aN" placeholder="Nama area"><input id="aM" placeholder="Mill (mis. FINISHING PF 1)" style="margin-top:8px"><button class="btn" onclick="tambahArea()">Tambah Area</button>
   <label>PIN lama</label><input id="pOld" type="password" inputmode="numeric" maxlength="6">
   <label>PIN baru (6 digit)</label><input id="pNew" type="password" inputmode="numeric" maxlength="6">

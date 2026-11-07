@@ -41,7 +41,7 @@ function navigateTo(s) {
 // ═ INIT: 1 panggilan server ═
 function fillAreas() {
   const opt = S.areas.map(a => '<option value="' + esc(a.ID) + '">' + esc(a.Nama) + '</option>').join('');
-  $('area').innerHTML = '<option value="">Pilih area</option>' + opt; $('eA').innerHTML = opt;
+  $('area').innerHTML = '<option value="">Pilih area</option>' + opt; $('eA').innerHTML = '<option value="">— pilih area —</option>' + opt;
   $('xAreas').innerHTML = S.areas.map(a => '<label><input type="checkbox" value="' + esc(a.ID) + '" checked onchange="hitungUnduh()"> ' + esc(a.Nama) + '</label>').join('');
 }
 function init() {
@@ -132,15 +132,20 @@ function renderList() {
   const qr = $('q').value.trim(), q = qr.toLowerCase(), fs = $('fs').value, fv = $('fv').value || 'all', hl = s => hlText(s, qr);
   const base = S.temuan.filter(t => fv === 'all' || t.FormID === fv);
   $('sT').textContent = base.length; $('sO').textContent = base.filter(t => t.Status !== 'Close').length; $('sC').textContent = base.filter(t => t.Status === 'Close').length;
-  const open = new Set([...document.querySelectorAll('.grp.open')].map(g => g.dataset.a));
+  const open = new Set([...document.querySelectorAll('.grp.open')].map(g => g.dataset.a)), known = new Set(S.areas.map(a => a.ID));
+  const cocok = (t, an) => (!fs || t.Status === fs) && (!q || (t.Remark + ' ' + an + ' ' + t.PIC + ' ' + t.Kategori).toLowerCase().includes(q));
   const card = t => '<div class="it ' + (t.Status === 'Close' ? 'cl' : '') + '"><b>#' + esc(t.No) + '</b> <span class="st ' + (t.Status === 'Close' ? 'c' : '') + '">' + esc(t.Status) + '</span> <span class="meta">' + esc(String(t.Tanggal).slice(0, 10)) + '</span><p>' + hl(t.Remark) + '</p><div class="ph">' + slot(t, 'b') + slot(t, 'a') + '</div><div class="meta">Kategori: ' + (t.Kategori ? hl(t.Kategori) : '—') + ' • PIC: ' + (t.PIC ? hl(t.PIC) : '—') + '</div>' +
     (S.pin ? '<button onclick="bukaEdit(\'' + t.ID + '\')">Lengkapi / Edit</button>' : '') + '</div>';
-  const html = S.forms.filter(f => fv === 'all' || f.ID === fv).map(f => S.areas.map(a => {
-    const its = base.filter(t => t.FormID === f.ID && t.AreaID === a.ID && (!fs || t.Status === fs) && (!q || (t.Remark + ' ' + a.Nama + ' ' + t.PIC + ' ' + t.Kategori).toLowerCase().includes(q))).sort(byNo);
+  const grp = (f, a, its) => {
     if (!its.length) return '';
     const key = f.ID + '|' + a.ID;
     return '<div class="grp ' + (open.has(key) || q ? 'open' : '') + '" data-a="' + esc(key) + '"><div class="gh" onclick="this.parentNode.classList.toggle(\'open\')"><span>' + hl(a.Nama) + (fv === 'all' ? ' <small class="mut">· ' + esc(f.Nama) + '</small>' : '') + '</span><span class="pill">' + its.length + ' temuan</span></div><div class="gb">' + its.map(card).join('') + '</div></div>';
-  }).join('')).join('');
+  };
+  // temuan yang areanya tidak ada di daftar area tidak boleh hilang diam-diam: ditampilkan di kelompok khusus
+  const yatim = { ID: '?', Nama: 'Area tidak dikenal (pilih area lewat Lengkapi / Edit)' };
+  const html = S.forms.filter(f => fv === 'all' || f.ID === fv).map(f =>
+    S.areas.map(a => grp(f, a, base.filter(t => t.FormID === f.ID && t.AreaID === a.ID && cocok(t, a.Nama)).sort(byNo))).join('') +
+    grp(f, yatim, base.filter(t => t.FormID === f.ID && !known.has(t.AreaID) && cocok(t, '')).sort(byNo))).join('');
   $('list').innerHTML = html || '<div class="card">Belum ada temuan.</div>';
 }
 function bukaCropTambah(id, k, f) {
@@ -477,6 +482,18 @@ function hitungUnduh() {
   $('xInfo').className = 'info' + (n > maks() ? ' bad' : ''); $('btnX').disabled = !n || n > maks();
 }
 
+function rapikanFoto() {
+  if (!confirm('Rapikan foto di Google Drive sekarang? Foto tidak dihapus, hanya dipindah ke folder form dan area yang benar lalu dinamai ulang. Proses bisa beberapa menit; jangan tutup halaman.')) return;
+  const b = $('btnRapi'); b.disabled = true; b.textContent = 'Merapikan… (jangan tutup halaman)';
+  const sel = () => { b.disabled = false; b.textContent = 'Rapikan Folder Foto'; };
+  google.script.run.withSuccessHandler(r => {
+    sel(); if (!r.success) return toast(r.message, false);
+    const d = r.data;
+    alert('Selesai.\nFoto dipindah: ' + d.pindah + '\nFoto dinamai ulang: ' + d.nama + '\nFolder kosong dibuang: ' + d.dibuang +
+      (d.lewat ? '\n\nWaktu proses habis sebelum selesai. Jalankan sekali lagi.' : '') +
+      (d.sisa.length ? '\n\nFolder berikut masih berisi file salinan yang tidak dipakai aplikasi (periksa, lalu hapus manual bila sudah yakin):\n- ' + d.sisa.join('\n- ') : ''));
+  }).withFailureHandler(e => { sel(); toast(e.message, false); }).rapikanFoto(S.pin);
+}
 // ═ PWA: tombol "Pasang" & pendaftaran service worker ═
 let tundaPasang = null;
 window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); tundaPasang = e; $('btnInstall').style.display = ''; });

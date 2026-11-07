@@ -15,7 +15,7 @@ const google = { script: { get run() {
 } } };
 
 // ═ STATE (semua data dimuat sekali; navigasi 0ms; fitur sama di semua perangkat) ═
-const S = { areas: [], temuan: [], forms: [], aktif: '', formSel: '', fv: 'all', editForm: null, cfg: {}, pin: null, editId: null, kat: [], zone: 'b', next: 'admin', addTarget: null };
+const S = { areas: [], temuan: [], cfg: {}, pin: null, editId: null, kat: [], zone: 'b', next: 'admin' };
 const $ = id => document.getElementById(id);
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const thumb = (id, w) => id ? 'https://drive.google.com/thumbnail?id=' + id + '&sz=w' + (w || 400) : '';
@@ -30,7 +30,6 @@ function applyAdmin() {
   const on = !!S.pin;
   ['U', 'A'].forEach(k => { $('g' + k).style.display = on ? 'none' : 'block'; $('c' + k).style.display = on ? 'block' : 'none'; });
   $('btnAdm').textContent = on ? 'Admin ✓' : 'Admin';
-  if (on) renderFormAdmin();
 }
 function navigateTo(s) {
   document.querySelectorAll('.sec').forEach(e => e.classList.toggle('on', e.id === 'sec-' + s));
@@ -42,7 +41,7 @@ function navigateTo(s) {
 function fillAreas() {
   const opt = S.areas.map(a => '<option value="' + esc(a.ID) + '">' + esc(a.Nama) + '</option>').join('');
   $('area').innerHTML = '<option value="">Pilih area</option>' + opt; $('eA').innerHTML = opt;
-  $('xAreas').innerHTML = S.areas.map(a => '<label><input type="checkbox" value="' + esc(a.ID) + '" checked onchange="hitungUnduh()"> ' + esc(a.Nama) + '</label>').join('');
+  $('xAreas').innerHTML = S.areas.map(a => '<label><input type="checkbox" value="' + esc(a.ID) + '" checked> ' + esc(a.Nama) + '</label>').join('');
 }
 function init() {
   navigateTo('input');
@@ -50,9 +49,10 @@ function init() {
     if (!r.success) return toast(r.message, false);
     Object.assign(S, r.data); fillAreas(); $('lg').src = S.cfg.logo6s;
     $('eK').innerHTML = '<option value="">-</option>' + S.kat.map(k => '<option>' + k + '</option>').join('');
-    S.formSel = formOf(S.aktif) ? S.aktif : ((S.forms.filter(f => f.Status !== 'Ditutup')[0] || {}).ID || '');
-    S.fv = S.formSel || 'all'; fillForms(); $('fv').value = S.fv; loadDraft(); renderList();
-    setInterval(cekForm, 60000); document.addEventListener('visibilitychange', () => { if (!document.hidden) cekForm(); });
+    $('xAuditee').value = S.cfg.Auditee || ''; $('xAuditor').value = S.cfg.Auditor || '';
+    const d = new Date(), p = n => String(n).padStart(2, '0');
+    $('xT1').value = d.getFullYear() + '-' + p(d.getMonth() + 1) + '-01'; $('xT2').value = d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
+    renderList();
   }).withFailureHandler(e => toast('Gagal memuat: ' + e.message, false)).getInit();
 }
 
@@ -100,23 +100,20 @@ document.addEventListener('paste', e => {
   e.preventDefault(); const z = document.activeElement && document.activeElement.closest ? document.activeElement.closest('.drop') : null;
   setPhoto(z ? z.dataset.k : (!photos.b ? 'b' : !photos.a ? 'a' : S.zone), f);
 });
-function resetForm() { $('area').value = ''; $('remark').value = ''; $('cnt').textContent = '0/250'; hapusFoto('b'); hapusFoto('a'); try { localStorage.removeItem(dk()); } catch (e) {} }
+function resetForm() { $('area').value = ''; $('remark').value = ''; $('cnt').textContent = '0/250'; hapusFoto('b'); hapusFoto('a'); }
 
 // ═ SIMPAN: minimal satu foto ═
 function simpan() {
-  const o = { formId: S.formSel, areaId: $('area').value, remark: $('remark').value.trim(), before: photos.b, after: photos.a }, fm = formOf(o.formId);
-  if (!fm) return toast('Belum ada form terbuka. Minta admin membuat form.', false);
-  if (fm.Status === 'Ditutup') return toast('Form "' + fm.Nama + '" sudah ditutup. Pilih form lain.', false);
+  const o = { areaId: $('area').value, remark: $('remark').value.trim(), before: photos.b, after: photos.a };
   if (!o.areaId) return toast('Pilih area dulu.', false);
   if (o.remark.length < 5) return toast('Remark minimal 5 karakter.', false);
   if (!o.before && !o.after) return toast('Upload minimal satu foto (Before atau After).', false);
   const b = $('btnSave'); b.disabled = true; b.textContent = 'Mengunggah foto…';
-  const done = () => { b.textContent = 'Simpan Temuan'; renderFormBar(); };
   google.script.run.withSuccessHandler(r => {
-    done();
-    if (!r.success) { if (/form/i.test(r.message)) cekForm(); return toast(r.message, false); }
-    S.temuan.push(r.data); resetForm(); fillForms(); toast('Temuan #' + r.data.No + ' tersimpan di ' + areaName(r.data.AreaID) + ' (' + fm.Nama + ')');
-  }).withFailureHandler(e => { done(); toast('Unggah gagal, coba lagi: ' + e.message, false); }).saveTemuan(o);
+    b.disabled = false; b.textContent = 'Simpan Temuan';
+    if (!r.success) return toast(r.message, false);
+    S.temuan.push(r.data); resetForm(); toast('Temuan #' + r.data.No + ' tersimpan di ' + areaName(r.data.AreaID));
+  }).withFailureHandler(e => { b.disabled = false; b.textContent = 'Simpan Temuan'; toast('Unggah gagal, coba lagi: ' + e.message, false); }).saveTemuan(o);
 }
 
 // ═ DAFTAR ═
@@ -129,18 +126,16 @@ function slot(t, k) {
     + '<input type="file" id="' + ik + '" data-id="' + t.ID + '" data-k="' + k + '" accept="image/*" hidden onchange="pilihTambah(this)">';
 }
 function renderList() {
-  const qr = $('q').value.trim(), q = qr.toLowerCase(), fs = $('fs').value, fv = $('fv').value || 'all', hl = s => hlText(s, qr);
-  const base = S.temuan.filter(t => fv === 'all' || t.FormID === fv);
-  $('sT').textContent = base.length; $('sO').textContent = base.filter(t => t.Status !== 'Close').length; $('sC').textContent = base.filter(t => t.Status === 'Close').length;
+  const qr = $('q').value.trim(), q = qr.toLowerCase(), fs = $('fs').value, hl = s => hlText(s, qr);
+  $('sT').textContent = S.temuan.length; $('sO').textContent = S.temuan.filter(t => t.Status !== 'Close').length; $('sC').textContent = S.temuan.filter(t => t.Status === 'Close').length;
   const open = new Set([...document.querySelectorAll('.grp.open')].map(g => g.dataset.a));
-  const card = t => '<div class="it ' + (t.Status === 'Close' ? 'cl' : '') + '"><b>#' + esc(t.No) + '</b> <span class="st ' + (t.Status === 'Close' ? 'c' : '') + '">' + esc(t.Status) + '</span> <span class="meta">' + esc(String(t.Tanggal).slice(0, 10)) + '</span><p>' + hl(t.Remark) + '</p><div class="ph">' + slot(t, 'b') + slot(t, 'a') + '</div><div class="meta">Kategori: ' + (t.Kategori ? hl(t.Kategori) : '—') + ' • PIC: ' + (t.PIC ? hl(t.PIC) : '—') + '</div>' +
-    (S.pin ? '<button onclick="bukaEdit(\'' + t.ID + '\')">Lengkapi / Edit</button>' : '') + '</div>';
-  const html = S.forms.filter(f => fv === 'all' || f.ID === fv).map(f => S.areas.map(a => {
-    const its = base.filter(t => t.FormID === f.ID && t.AreaID === a.ID && (!fs || t.Status === fs) && (!q || (t.Remark + ' ' + a.Nama + ' ' + t.PIC + ' ' + t.Kategori).toLowerCase().includes(q))).sort(byNo);
+  const html = S.areas.map(a => {
+    const its = S.temuan.filter(t => t.AreaID === a.ID && (!fs || t.Status === fs) && (!q || (t.Remark + ' ' + a.Nama + ' ' + t.PIC + ' ' + t.Kategori).toLowerCase().includes(q))).sort(byNo);
     if (!its.length) return '';
-    const key = f.ID + '|' + a.ID;
-    return '<div class="grp ' + (open.has(key) || q ? 'open' : '') + '" data-a="' + esc(key) + '"><div class="gh" onclick="this.parentNode.classList.toggle(\'open\')"><span>' + hl(a.Nama) + (fv === 'all' ? ' <small class="mut">· ' + esc(f.Nama) + '</small>' : '') + '</span><span class="pill">' + its.length + ' temuan</span></div><div class="gb">' + its.map(card).join('') + '</div></div>';
-  }).join('')).join('');
+    return '<div class="grp ' + (open.has(a.ID) || q ? 'open' : '') + '" data-a="' + esc(a.ID) + '"><div class="gh" onclick="this.parentNode.classList.toggle(\'open\')"><span>' + hl(a.Nama) + '</span><span class="pill">' + its.length + ' temuan</span></div><div class="gb">' +
+      its.map(t => '<div class="it ' + (t.Status === 'Close' ? 'cl' : '') + '"><b>#' + esc(t.No) + '</b> <span class="st ' + (t.Status === 'Close' ? 'c' : '') + '">' + esc(t.Status) + '</span> <span class="meta">' + esc(String(t.Tanggal).slice(0, 10)) + '</span><p>' + hl(t.Remark) + '</p><div class="ph">' + slot(t, 'b') + slot(t, 'a') + '</div><div class="meta">Kategori: ' + (t.Kategori ? hl(t.Kategori) : '—') + ' • PIC: ' + (t.PIC ? hl(t.PIC) : '—') + '</div>' +
+        (S.pin ? '<button onclick="bukaEdit(\'' + t.ID + '\')">Lengkapi / Edit</button>' : '') + '</div>').join('') + '</div></div>';
+  }).join('');
   $('list').innerHTML = html || '<div class="card">Belum ada temuan.</div>';
 }
 function bukaCropTambah(id, k, f) {
@@ -178,7 +173,7 @@ lst.addEventListener('drop', e => {
 function openPin(next) { S.next = next || 'admin'; if (S.pin) return navigateTo(S.next); $('pin').value = ''; $('mPin').classList.add('on'); $('pin').focus(); }
 function loginAdmin() {
   const p = $('pin').value; google.script.run.withSuccessHandler(r => {
-    if (!r.success) return toast(r.message || 'PIN salah.', false);
+    if (!r.success) return toast('PIN salah.', false);
     S.pin = p; closeM('mPin'); toast('Mode admin aktif'); renderList(); navigateTo(S.next);
   }).withFailureHandler(e => toast(e.message, false)).cekPin(p);
 }
@@ -194,16 +189,16 @@ function tambahArea() {
 function bukaEdit(id) {
   const t = S.temuan.find(x => x.ID === id); if (!t) return; S.editId = id;
   const m = /^([A-Z]+\d?)-?(\d*)$/.exec(t.Kategori || '') || [];
-  $('eA').value = t.AreaID; $('eF').value = t.FormID; $('eR').value = t.Remark || ''; renderEditFoto(t); $('eK').value = m[1] || ''; $('eN').value = m[2] || ''; $('eP').value = t.PIC || ''; $('eS').value = t.Status || 'Open'; $('mEdit').classList.add('on');
+  $('eA').value = t.AreaID; $('eR').value = t.Remark || ''; renderEditFoto(t); $('eK').value = m[1] || ''; $('eN').value = m[2] || ''; $('eP').value = t.PIC || ''; $('eS').value = t.Status || 'Open'; $('mEdit').classList.add('on');
 }
 function simpanEdit() {
   const t = S.temuan.find(x => x.ID === S.editId), k = $('eK').value, n = $('eN').value;
   if ($('eR').value.trim().length < 5) return toast('Remark minimal 5 karakter.', false);
-  const f = { Remark: $('eR').value.trim(), FormID: $('eF').value, AreaID: $('eA').value, Kategori: k ? k + (n ? '-' + n : '') : '', PIC: $('eP').value.trim(), Status: $('eS').value }, old = Object.assign({}, t);
+  const f = { Remark: $('eR').value.trim(), AreaID: $('eA').value, Kategori: k ? k + (n ? '-' + n : '') : '', PIC: $('eP').value.trim(), Status: $('eS').value }, old = Object.assign({}, t);
   Object.assign(t, f); closeM('mEdit'); renderList();
   google.script.run.withSuccessHandler(r => {
     if (!r.success) { Object.assign(t, old); renderList(); return toast(r.message, false); }
-    t.AreaID = r.data.AreaID; t.FormID = r.data.FormID; t.No = r.data.No; fillForms(); renderList(); toast('Tersimpan');
+    t.AreaID = r.data.AreaID; t.No = r.data.No; renderList(); toast('Tersimpan');
   }).withFailureHandler(e => { Object.assign(t, old); renderList(); toast(e.message, false); }).updateTemuan(S.pin, S.editId, f);
 }
 function hapus() {
@@ -214,41 +209,35 @@ function hapus() {
 
 // ═ UNDUH (hanya admin; dicek ulang di server) ═
 function readX() {
-  return { format: document.querySelector('input[name=fmt]:checked').value, formIds: selForms(), areaIds: [...document.querySelectorAll('#xAreas input:checked')].map(i => i.value) };
+  return { format: document.querySelector('input[name=fmt]:checked').value, mill: $('xMill').value, auditee: $('xAuditee').value, auditor: $('xAuditor').value, tgl1: $('xT1').value, tgl2: $('xT2').value, areaIds: [...document.querySelectorAll('#xAreas input:checked')].map(i => i.value) };
 }
 function preview() {
   if (!S.pin) return toast('Hanya admin yang dapat membuka menu ini.', false);
-  const o = readX(); if (!o.formIds.length) return toast('Pilih minimal satu form.', false);
-  if (!o.areaIds.length) return toast('Pilih minimal satu area.', false);
-  const forms = S.forms.filter(f => o.formIds.includes(f.ID)).sort((a, b) => tg(a.Tgl1).localeCompare(tg(b.Tgl1)));
-  const im = id => id ? '<img src="' + thumb(id, 360) + '" alt="">' : ''; let total = 0;
-  const body = forms.map(f => {
-    const tabel = S.areas.filter(a => o.areaIds.includes(a.ID)).map(a => {
-      const its = S.temuan.filter(t => t.FormID === f.ID && t.AreaID === a.ID).sort(byNo); total += its.length;
-      if (!its.length) return '';
-      return '<div class="pa">AREA / SUB-AREA: ' + esc(a.Nama.toUpperCase()) + '</div><table class="pt"><colgroup><col width="4%"><col width="17%"><col width="10%"><col width="9%"><col width="23%"><col width="23%"><col width="8%"><col width="6%"></colgroup><thead><tr><th>No</th><th>Remark of finding</th><th>Location</th><th>Finding Category<br><small>(FP, R1-5+W, Z)</small></th><th>Foto Before</th><th>Foto After</th><th>PIC</th><th>Status</th></tr></thead><tbody>' +
-        its.map(t => '<tr><td class="no">' + esc(t.No) + '</td><td class="l">' + esc(t.Remark) + '</td><td>' + esc(a.Nama) + '</td><td>' + esc(t.Kategori) + '</td><td>' + im(t.FotoBefore) + '</td><td>' + im(t.FotoAfter) + '</td><td>' + esc(t.PIC) + '</td><td>' + esc(t.Status) + '</td></tr>').join('') + '</tbody></table>';
-    }).join('');
-    return '<div class="paper"><div class="ph2"><img src="' + S.cfg.logoApp + '" alt="APP"><div class="tt">FORM FINDING AUDIT 6S/6K &amp; IMPROVEMENT <small>(' + esc(tg(f.Tgl2).slice(0, 4)) + ')</small></div><img src="' + S.cfg.logo6s + '" alt="6S"></div><div class="ln"></div>' +
-      '<div class="inf"><b>AREA / MILL</b><span>: ' + esc(f.Mill) + '</span><b>AUDITOR</b><span>: ' + esc(f.Auditor) + '</span><b>AUDITEE</b><span>: ' + esc(f.Auditee) + '</span><b>DATE</b><span>: ' + esc(tg(f.Tgl1) + ' - ' + tg(f.Tgl2)) + '</span></div>' + (tabel || '<p>(Belum ada temuan pada area yang dipilih)</p>') + '</div>';
+  const o = readX(); if (!o.areaIds.length) return toast('Pilih minimal satu area.', false);
+  const tabel = S.areas.filter(a => o.areaIds.includes(a.ID)).map(a => {
+    const its = S.temuan.filter(t => t.AreaID === a.ID && String(t.Tanggal).slice(0, 10) >= o.tgl1 && String(t.Tanggal).slice(0, 10) <= o.tgl2).sort(byNo);
+    if (!its.length) return '';
+    const im = id => id ? '<img src="' + thumb(id, 360) + '" alt="">' : '';
+    return '<div class="pa">AREA / SUB-AREA: ' + esc(a.Nama.toUpperCase()) + '</div><table class="pt"><colgroup><col width="4%"><col width="17%"><col width="10%"><col width="9%"><col width="23%"><col width="23%"><col width="8%"><col width="6%"></colgroup><thead><tr><th>No</th><th>Remark of finding</th><th>Location</th><th>Finding Category<br><small>(FP, R1-5+W, Z)</small></th><th>Foto Before</th><th>Foto After</th><th>PIC</th><th>Status</th></tr></thead><tbody>' +
+      its.map(t => '<tr><td class="no">' + esc(t.No) + '</td><td class="l">' + esc(t.Remark) + '</td><td>' + esc(a.Nama) + '</td><td>' + esc(t.Kategori) + '</td><td>' + im(t.FotoBefore) + '</td><td>' + im(t.FotoAfter) + '</td><td>' + esc(t.PIC) + '</td><td>' + esc(t.Status) + '</td></tr>').join('') + '</tbody></table>';
   }).join('');
-  if (!total) return toast('Tidak ada temuan pada form dan area tersebut.', false);
-  $('prevBody').innerHTML = body; $('mPrev').classList.add('on');
+  if (!tabel) return toast('Tidak ada temuan pada area dan tanggal tersebut.', false);
+  $('prevBody').innerHTML = '<div class="paper"><div class="ph2"><img src="' + S.cfg.logoApp + '" alt="APP"><div class="tt">FORM FINDING AUDIT 6S/6K &amp; IMPROVEMENT <small>(' + esc(o.tgl2.slice(0, 4)) + ')</small></div><img src="' + S.cfg.logo6s + '" alt="6S"></div><div class="ln"></div>' +
+    '<div class="inf"><b>AREA / MILL</b><span>: ' + esc(o.mill) + '</span><b>AUDITOR</b><span>: ' + esc(o.auditor) + '</span><b>AUDITEE</b><span>: ' + esc(o.auditee) + '</span><b>DATE</b><span>: ' + esc(o.tgl1 + ' - ' + o.tgl2) + '</span></div>' + tabel + '</div>';
+  $('mPrev').classList.add('on');
 }
 function unduh() {
   if (!S.pin) return toast('Hanya admin yang dapat mengunduh hasil akhir.', false);
-  const o = readX(); if (!o.formIds.length) return toast('Pilih minimal satu form.', false);
-  if (!o.areaIds.length) return toast('Pilih minimal satu area.', false);
+  const o = readX(); if (!o.areaIds.length) return toast('Pilih minimal satu area.', false);
   const b = $('btnX'); b.disabled = true; b.textContent = 'Menyiapkan dokumen… (bisa 1 menit)'; $('xLink').style.display = 'none';
-  const selesai = () => { b.textContent = 'Buka / Unduh Dokumen'; hitungUnduh(); };
   google.script.run.withSuccessHandler(r => {
-    selesai();
+    b.disabled = false; b.textContent = 'Buka / Unduh Dokumen';
     if (!r.success) return toast(r.message, false);
     $('xLink').href = r.data.url; $('xLink').style.display = 'block'; $('xLink').textContent = o.format === 'gdoc' ? 'Buka Google Doc' : 'Belum terunduh? Klik di sini';
     if (o.format === 'gdoc') window.open(r.data.url, '_blank');
     else if (r.data.b64) { simpanBlob(r.data.name, r.data.b64); toast('Dokumen terunduh & tersimpan di folder Unduhan Drive'); }
     else { window.open(r.data.url, '_blank'); toast('Dokumen siap, tersimpan di folder Unduhan Drive'); }
-  }).withFailureHandler(e => { selesai(); toast(e.message, false); }).exportHasil(S.pin, o);
+  }).withFailureHandler(e => { b.disabled = false; b.textContent = 'Buka / Unduh Dokumen'; toast(e.message, false); }).exportHasil(S.pin, o);
 }
 $('pin').addEventListener('keydown', e => { if (e.key === 'Enter') loginAdmin(); });
 document.addEventListener('DOMContentLoaded', init);
@@ -355,126 +344,6 @@ function simpanBlob(name, b64) {
   const bin = atob(b64), u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
   const url = URL.createObjectURL(new Blob([u])), a = document.createElement('a');
   a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 60000);
-}
-
-// ═ FORM (satu form per auditor/audit) ═
-const hariIni = () => { const d = new Date(), p = n => String(n).padStart(2, '0'); return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()); };
-const tg = s => String(s || '').slice(0, 10);
-const formOf = id => S.forms.find(f => f.ID === id);
-const maks = () => (S.cfg && S.cfg.maks) || 80;
-const fopt = f => '<option value="' + esc(f.ID) + '">' + esc(f.Nama) + (f.Status === 'Ditutup' ? ' (ditutup)' : '') + '</option>';
-let td;
-const dk = () => 'd:' + S.formSel;
-function saveDraft() { try { const a = $('area').value, r = $('remark').value; if (a || r.trim()) localStorage.setItem(dk(), JSON.stringify({ a: a, r: r })); else localStorage.removeItem(dk()); } catch (e) {} }
-function draftSoon() { clearTimeout(td); td = setTimeout(saveDraft, 500); }
-function loadDraft() {
-  try { const d = JSON.parse(localStorage.getItem(dk()) || 'null'); if (d) { $('area').value = d.a || ''; $('remark').value = d.r || ''; $('cnt').textContent = $('remark').value.length + '/250'; } } catch (e) {}
-}
-function fillForms() {
-  const keep = new Set([...document.querySelectorAll('#xForms input:checked')].map(i => i.value)), first = !document.querySelector('#xForms input');
-  if (!formOf(S.formSel)) S.formSel = formOf(S.aktif) ? S.aktif : ((S.forms.filter(f => f.Status !== 'Ditutup')[0] || {}).ID || '');
-  const op = S.forms.filter(f => f.Status !== 'Ditutup' || f.ID === S.formSel);
-  $('fSel').innerHTML = op.length ? op.map(fopt).join('') : '<option value="">(tidak ada form terbuka)</option>'; $('fSel').value = S.formSel;
-  const cur = $('fv').value || S.fv || 'all';
-  $('fv').innerHTML = '<option value="all">Semua form</option>' + S.forms.map(fopt).join('');
-  $('fv').value = cur === 'all' || formOf(cur) ? cur : 'all';
-  $('eF').innerHTML = S.forms.map(fopt).join('');
-  $('xForms').innerHTML = S.forms.map(f => '<label><input type="checkbox" value="' + esc(f.ID) + '" ' + (keep.has(f.ID) || (first && f.ID === S.aktif) ? 'checked' : '') + ' onchange="hitungUnduh()"> ' + esc(f.Nama) + ' <span class="mut">(' + S.temuan.filter(t => t.FormID === f.ID).length + ' temuan)</span></label>').join('');
-  renderFormBar(); renderFormAdmin(); hitungUnduh();
-}
-function renderFormBar() {
-  const f = formOf(S.formSel), b = $('formBar'); let h, cls = 'fb';
-  if (!f) { h = '<b>Belum ada form terbuka.</b><span>Minta admin membuat atau membuka form dulu.</span>'; cls += ' warn'; }
-  else {
-    h = '<small>Anda mengisi form:</small><b>' + esc(f.Nama) + '</b><span>Auditor: ' + esc(f.Auditor || '—') + ' • ' + esc(tg(f.Tgl1)) + ' s/d ' + esc(tg(f.Tgl2)) + '</span>';
-    const hi = hariIni(), ak = formOf(S.aktif);
-    if (f.Status === 'Ditutup') { h += '<em>Perhatian: form ini sudah ditutup. Pilih form lain sebelum menyimpan.</em>'; cls += ' bad'; }
-    else {
-      if (f.ID !== S.aktif) { h += '<em>Perhatian: ini bukan form aktif' + (ak ? ' (form aktif: ' + esc(ak.Nama) + ')' : '') + '. Pastikan sudah benar.</em>'; cls += ' warn'; }
-      if (hi > tg(f.Tgl2) || hi < tg(f.Tgl1)) { h += '<em>Perhatian: tanggal hari ini di luar periode form.</em>'; cls += ' warn'; }
-    }
-  }
-  b.className = cls; b.innerHTML = h;
-  $('btnSave').disabled = !f || f.Status === 'Ditutup';
-}
-function gantiForm() {
-  const ada = $('remark').value.trim() || photos.b || photos.a, old = S.formSel;
-  S.formSel = $('fSel').value;
-  if (ada) { try { localStorage.removeItem('d:' + old); } catch (e) {} saveDraft(); } else loadDraft();
-  renderFormBar();
-}
-/** Dipanggil tiap menit & saat aplikasi dibuka lagi: memberi tahu bila form aktif berganti atau form ditutup. */
-function cekForm() {
-  google.script.run.withSuccessHandler(r => {
-    if (!r.success) return;
-    const lama = S.aktif; S.forms = r.data.forms; S.aktif = r.data.aktif;
-    const f = formOf(S.formSel);
-    if (S.aktif !== lama) toast('Form aktif sekarang: ' + ((formOf(S.aktif) || {}).Nama || 'tidak ada'));
-    if (f && f.Status === 'Ditutup') toast('Form "' + f.Nama + '" sudah ditutup. Pilih form lain sebelum menyimpan.', false);
-    fillForms(); renderList();
-  }).getForms();
-}
-
-// ─ Admin: kelola form ─
-function renderFormAdmin() {
-  if (!$('fAdmin')) return;
-  $('fAdmin').innerHTML = S.forms.map(f => {
-    const n = S.temuan.filter(t => t.FormID === f.ID).length, ak = f.ID === S.aktif, tut = f.Status === 'Ditutup';
-    return '<div class="fc"><div class="row"><b>' + esc(f.Nama) + '</b><span class="st ' + (tut ? 'g' : 'c') + '">' + (ak ? 'Aktif' : tut ? 'Ditutup' : 'Terbuka') + '</span></div>' +
-      '<div class="meta">Auditor: ' + esc(f.Auditor || '—') + ' • Auditee: ' + esc(f.Auditee || '—') + '<br>' + esc(f.Mill || '—') + ' • ' + esc(tg(f.Tgl1)) + ' s/d ' + esc(tg(f.Tgl2)) + ' • ' + n + ' temuan</div><div class="pbtn">' +
-      (ak ? '' : '<button class="btn ghost" type="button" onclick="aktifkanForm(\'' + f.ID + '\')">' + (tut ? 'Lanjutkan' : 'Jadikan aktif') + '</button>') +
-      '<button class="btn ghost" type="button" onclick="bukaFormModal(\'' + f.ID + '\')">Ubah kop</button>' +
-      (tut ? '' : '<button class="btn ghost" type="button" onclick="tutupForm(\'' + f.ID + '\')">Tutup</button>') +
-      (n ? '' : '<button class="btn danger" type="button" onclick="hapusForm(\'' + f.ID + '\')">Hapus</button>') + '</div></div>';
-  }).join('') || '<p class="mut">Belum ada form.</p>';
-}
-function terapkanForm(r) {
-  const i = S.forms.findIndex(f => f.ID === r.data.form.ID); if (i >= 0) S.forms[i] = r.data.form; else S.forms.push(r.data.form);
-  if (r.data.aktif !== undefined) S.aktif = r.data.aktif;
-  fillForms(); renderList();
-}
-function bukaFormModal(id) {
-  S.editForm = id || null; const f = id ? formOf(id) : null, last = S.forms[S.forms.length - 1] || {};
-  $('fmTitle').textContent = f ? 'Ubah Kop Form' : 'Tambah Form Baru';
-  $('fmN').value = f ? f.Nama : ''; $('fmM').value = f ? f.Mill : (last.Mill || 'FINISHING PF 1');
-  $('fmE').value = f ? f.Auditee : ''; $('fmA').value = f ? f.Auditor : '';
-  $('fmT1').value = f ? tg(f.Tgl1) : hariIni(); $('fmT2').value = f ? tg(f.Tgl2) : hariIni();
-  $('fmAk').checked = !f; $('fmAkRow').style.display = f ? 'none' : ''; $('mForm').classList.add('on');
-}
-function simpanForm() {
-  const o = { nama: $('fmN').value.trim(), mill: $('fmM').value.trim(), auditee: $('fmE').value.trim(), auditor: $('fmA').value.trim(), tgl1: $('fmT1').value, tgl2: $('fmT2').value, aktifkan: $('fmAk').checked }, edit = S.editForm;
-  if (!o.tgl1 || !o.tgl2 || o.tgl2 < o.tgl1) return toast('Isi tanggal dengan benar (selesai tidak boleh sebelum mulai).', false);
-  if (!o.nama && !o.auditor) return toast('Isi nama form atau nama auditor.', false);
-  const ok = r => { if (!r.success) return toast(r.message, false); closeM('mForm'); terapkanForm(r); toast(edit ? 'Form diperbarui' : 'Form dibuat'); }, ng = e => toast(e.message, false);
-  if (edit) google.script.run.withSuccessHandler(ok).withFailureHandler(ng).ubahForm(S.pin, edit, o);
-  else google.script.run.withSuccessHandler(ok).withFailureHandler(ng).buatForm(S.pin, o);
-}
-function aktifkanForm(id) {
-  const f = formOf(id), kosong = !$('remark').value.trim() && !photos.b && !photos.a;
-  google.script.run.withSuccessHandler(r => { if (!r.success) return toast(r.message, false); if (kosong) S.formSel = id; terapkanForm(r); toast('Form aktif: ' + f.Nama); })
-    .withFailureHandler(e => toast(e.message, false)).setFormAktif(S.pin, id);
-}
-function tutupForm(id) {
-  const f = formOf(id); if (!confirm('Tutup form "' + f.Nama + '"? Temuan baru tidak bisa ditambahkan, tetapi bisa dibuka kembali lewat tombol Lanjutkan.')) return;
-  google.script.run.withSuccessHandler(r => { if (!r.success) return toast(r.message, false); terapkanForm(r); toast('Form ditutup'); })
-    .withFailureHandler(e => toast(e.message, false)).setFormStatus(S.pin, id, 'Ditutup');
-}
-function hapusForm(id) {
-  const f = formOf(id); if (!confirm('Hapus form kosong "' + f.Nama + '"?')) return;
-  google.script.run.withSuccessHandler(r => {
-    if (!r.success) return toast(r.message, false);
-    S.forms = S.forms.filter(x => x.ID !== id); S.aktif = r.data.aktif; if (S.formSel === id) S.formSel = ''; fillForms(); renderList(); toast('Form dihapus');
-  }).withFailureHandler(e => toast(e.message, false)).hapusForm(S.pin, id);
-}
-
-// ─ Unduh: pilih form ─
-function selForms() { return [...document.querySelectorAll('#xForms input:checked')].map(i => i.value); }
-function pilihSemuaForm(v) { document.querySelectorAll('#xForms input').forEach(i => { i.checked = v; }); hitungUnduh(); }
-function hitungUnduh() {
-  const ids = selForms(), ar = new Set([...document.querySelectorAll('#xAreas input:checked')].map(i => i.value));
-  const n = S.temuan.filter(t => ids.includes(t.FormID) && ar.has(t.AreaID)).length;
-  $('xInfo').textContent = n + ' temuan terpilih (maksimal ' + maks() + ' per file)' + (n > maks() ? ' — kurangi form atau area yang dipilih.' : '');
-  $('xInfo').className = 'info' + (n > maks() ? ' bad' : ''); $('btnX').disabled = !n || n > maks();
 }
 
 // ═ PWA: tombol "Pasang" & pendaftaran service worker ═

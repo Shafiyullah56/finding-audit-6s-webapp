@@ -65,3 +65,9 @@ mark{background:#FFEB3B;color:#000;border-radius:2px;padding:0 1px}
 .ab{display:flex;flex-direction:column;gap:4px;width:100%;margin-top:4px}
 .ab label,.ab button{display:block;margin:0;border:1px solid var(--bd);background:#fff;color:var(--navy);border-radius:4px;font:600 13px Inter,Arial;min-height:40px;line-height:38px;cursor:pointer}
 .add.over{border-color:var(--navy);background:#EEF2FF}.add:focus{outline:2px solid var(--navy);outline-offset:2px}
+.fb{background:#EEF2FF;border:1px solid var(--bd);border-left:4px solid var(--navy);border-radius:8px;padding:10px 14px;margin:0 0 12px;display:grid;gap:2px}
+.fb small{color:var(--mu);font-size:12px}.fb b{font-size:16px}.fb span{font-size:13px;color:var(--mu)}.fb em{font-style:normal;font-size:13px;font-weight:600;color:#92400E}
+.fb.warn{background:#FFFBEB;border-left-color:#D97706}.fb.bad{background:var(--dgs);border-left-color:var(--dg)}.fb.bad em{color:var(--dg)}
+.fc{border:1px solid var(--bd);border-radius:8px;padding:12px;margin:0 0 10px}.fc .pbtn{flex-wrap:wrap}.fc .pbtn .btn{flex:1 1 120px}
+.st.g{background:#E2E8F0;color:#475569}.info.bad{background:var(--dgs);color:var(--dg)}hr{border:0;border-top:1px solid var(--bd);margin:18px 0}
+.chk{display:flex;gap:10px;align-items:center;font-weight:500}.chk input{width:22px;min-height:22px}.paper{margin-bottom:18px}

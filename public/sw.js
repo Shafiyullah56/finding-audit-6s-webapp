@@ -1,5 +1,5 @@
 // Service worker sederhana: online = selalu ambil versi terbaru; offline = tampilkan salinan terakhir.
-const V = 'temuan6s-v2';
+const V = 'temuan6s-v3';
 const SHELL = ['./', 'index.html', 'style.css', 'app.js', 'config.js', 'manifest.json', 'icons/icon-192.png', 'icons/icon-512.png'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(V).then(c => c.addAll(SHELL)).then(() => self.skipWaiting())); });
 self.addEventListener('activate', e => {

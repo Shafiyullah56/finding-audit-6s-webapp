@@ -19,7 +19,7 @@ const S = { areas: [], temuan: [], forms: [], aktif: '', formSel: '', fv: 'all',
 const $ = id => document.getElementById(id);
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const thumb = (id, w) => id ? 'https://drive.google.com/thumbnail?id=' + id + '&sz=w' + (w || 400) : '';
-const areaName = id => (S.areas.find(a => a.ID === id) || {}).Nama || '-';
+const areaName = id => (S.areas.find(a => a.ID === id) || {}).Label || '-';
 const byNo = (x, y) => (Number(x.No) || 0) - (Number(y.No) || 0);
 const isImg = f => f && /^image\//.test(f.type);
 let photos = { b: null, a: null }, tmr;
@@ -106,7 +106,7 @@ function resetForm() { $('area').value = ''; $('remark').value = ''; $('cnt').te
 function simpan() {
   const o = { formId: S.formSel, areaId: $('area').value, remark: $('remark').value.trim(), before: photos.b, after: photos.a }, fm = formOf(o.formId);
   if (!fm) return toast('Belum ada form terbuka. Minta admin membuat form.', false);
-  if (fm.Status === 'Ditutup') return toast('Form "' + fm.Nama + '" sudah ditutup. Pilih form lain.', false);
+  if (fm.Status === 'Ditutup') return toast('Form "' + fm.Label + '" sudah ditutup. Pilih form lain.', false);
   if (!o.areaId) return toast('Pilih area dulu.', false);
   if (o.remark.length < 5) return toast('Remark minimal 5 karakter.', false);
   if (!o.before && !o.after) return toast('Upload minimal satu foto (Before atau After).', false);
@@ -115,7 +115,7 @@ function simpan() {
   google.script.run.withSuccessHandler(r => {
     done();
     if (!r.success) { if (/form/i.test(r.message)) cekForm(); return toast(r.message, false); }
-    S.temuan.push(r.data); resetForm(); fillForms(); toast('Temuan #' + r.data.No + ' tersimpan di ' + areaName(r.data.AreaID) + ' (' + fm.Nama + ')');
+    S.temuan.push(r.data); resetForm(); fillForms(); toast('Temuan #' + r.data.No + ' tersimpan di ' + areaName(r.data.AreaID) + ' (' + fm.Label + ')');
   }).withFailureHandler(e => { done(); toast('Unggah gagal, coba lagi: ' + e.message, false); }).saveTemuan(o);
 }
 
@@ -139,7 +139,7 @@ function renderList() {
   const grp = (f, a, its) => {
     if (!its.length) return '';
     const key = f.ID + '|' + a.ID;
-    return '<div class="grp ' + (open.has(key) || q ? 'open' : '') + '" data-a="' + esc(key) + '"><div class="gh" onclick="this.parentNode.classList.toggle(\'open\')"><span>' + hl(a.Nama) + (fv === 'all' ? ' <small class="mut">· ' + esc(f.Nama) + '</small>' : '') + '</span><span class="pill">' + its.length + ' temuan</span></div><div class="gb">' + its.map(card).join('') + '</div></div>';
+    return '<div class="grp ' + (open.has(key) || q ? 'open' : '') + '" data-a="' + esc(key) + '"><div class="gh" onclick="this.parentNode.classList.toggle(\'open\')"><span>' + hl(a.Nama) + (fv === 'all' ? ' <small class="mut">· ' + esc(f.Label) + '</small>' : '') + '</span><span class="pill">' + its.length + ' temuan</span></div><div class="gb">' + its.map(card).join('') + '</div></div>';
   };
   // temuan yang areanya tidak ada di daftar area tidak boleh hilang diam-diam: ditampilkan di kelompok khusus
   const yatim = { ID: '?', Nama: 'Area tidak dikenal (pilih area lewat Lengkapi / Edit)' };
@@ -219,20 +219,22 @@ function hapus() {
 
 // ═ UNDUH (hanya admin; dicek ulang di server) ═
 function readX() {
-  return { format: document.querySelector('input[name=fmt]:checked').value, formIds: selForms(), areaIds: [...document.querySelectorAll('#xAreas input:checked')].map(i => i.value) };
+  return { format: document.querySelector('input[name=fmt]:checked').value, foto: $('xFoto').value || 'both', formIds: selForms(), areaIds: [...document.querySelectorAll('#xAreas input:checked')].map(i => i.value) };
 }
 function preview() {
   if (!S.pin) return toast('Hanya admin yang dapat membuka menu ini.', false);
-  const o = readX(); if (!o.formIds.length) return toast('Pilih minimal satu form.', false);
+  const o = readX(); if (!o.formIds.length) return toast('Pilih form yang akan diunduh.', false);
   if (!o.areaIds.length) return toast('Pilih minimal satu area.', false);
-  const forms = S.forms.filter(f => o.formIds.includes(f.ID)).sort((a, b) => tg(a.Tgl1).localeCompare(tg(b.Tgl1)));
+  const forms = S.forms.filter(f => o.formIds.includes(f.ID)), fb = o.foto !== 'after', fa = o.foto !== 'before';
+  const th = '<th>No</th><th>Remark of finding</th><th>Location</th><th>Finding Category<br><small>(FP, R1-5+W, Z)</small></th>' + (fb ? '<th>Foto Before</th>' : '') + (fa ? '<th>Foto After</th>' : '') + '<th>PIC</th><th>Status</th>';
+  const cg = fb && fa ? '<col width="4%"><col width="17%"><col width="10%"><col width="9%"><col width="23%"><col width="23%"><col width="8%"><col width="6%">' : '<col width="4%"><col width="24%"><col width="12%"><col width="10%"><col width="34%"><col width="9%"><col width="7%">';
   const im = id => id ? '<img src="' + thumb(id, 360) + '" alt="">' : ''; let total = 0;
   const body = forms.map(f => {
     const tabel = S.areas.filter(a => o.areaIds.includes(a.ID)).map(a => {
       const its = S.temuan.filter(t => t.FormID === f.ID && t.AreaID === a.ID).sort(byNo); total += its.length;
       if (!its.length) return '';
-      return '<div class="pa">AREA / SUB-AREA: ' + esc(a.Nama.toUpperCase()) + '</div><table class="pt"><colgroup><col width="4%"><col width="17%"><col width="10%"><col width="9%"><col width="23%"><col width="23%"><col width="8%"><col width="6%"></colgroup><thead><tr><th>No</th><th>Remark of finding</th><th>Location</th><th>Finding Category<br><small>(FP, R1-5+W, Z)</small></th><th>Foto Before</th><th>Foto After</th><th>PIC</th><th>Status</th></tr></thead><tbody>' +
-        its.map(t => '<tr><td class="no">' + esc(t.No) + '</td><td class="l">' + esc(t.Remark) + '</td><td>' + esc(a.Nama) + '</td><td>' + esc(t.Kategori) + '</td><td>' + im(t.FotoBefore) + '</td><td>' + im(t.FotoAfter) + '</td><td>' + esc(t.PIC) + '</td><td>' + esc(t.Status) + '</td></tr>').join('') + '</tbody></table>';
+      return '<div class="pa">AREA / SUB-AREA: ' + esc(a.Nama.toUpperCase()) + '</div><table class="pt"><colgroup>' + cg + '</colgroup><thead><tr>' + th + '</tr></thead><tbody>' +
+        its.map(t => '<tr><td class="no">' + esc(t.No) + '</td><td class="l">' + esc(t.Remark) + '</td><td>' + esc(a.Nama) + '</td><td>' + esc(t.Kategori) + '</td>' + (fb ? '<td>' + im(t.FotoBefore) + '</td>' : '') + (fa ? '<td>' + im(t.FotoAfter) + '</td>' : '') + '<td>' + esc(t.PIC) + '</td><td>' + esc(t.Status) + '</td></tr>').join('') + '</tbody></table>';
     }).join('');
     return '<div class="paper"><div class="ph2"><img src="' + S.cfg.logoApp + '" alt="APP"><div class="tt">FORM FINDING AUDIT 6S/6K &amp; IMPROVEMENT <small>(' + esc(tg(f.Tgl2).slice(0, 4)) + ')</small></div><img src="' + S.cfg.logo6s + '" alt="6S"></div><div class="ln"></div>' +
       '<div class="inf"><b>AREA / MILL</b><span>: ' + esc(f.Mill) + '</span><b>AUDITOR</b><span>: ' + esc(f.Auditor) + '</span><b>AUDITEE</b><span>: ' + esc(f.Auditee) + '</span><b>DATE</b><span>: ' + esc(tg(f.Tgl1) + ' - ' + tg(f.Tgl2)) + '</span></div>' + (tabel || '<p>(Belum ada temuan pada area yang dipilih)</p>') + '</div>';
@@ -367,7 +369,7 @@ const hariIni = () => { const d = new Date(), p = n => String(n).padStart(2, '0'
 const tg = s => String(s || '').slice(0, 10);
 const formOf = id => S.forms.find(f => f.ID === id);
 const maks = () => (S.cfg && S.cfg.maks) || 80;
-const fopt = f => '<option value="' + esc(f.ID) + '">' + esc(f.Nama) + (f.Status === 'Ditutup' ? ' (ditutup)' : '') + '</option>';
+const fopt = f => '<option value="' + esc(f.ID) + '">' + esc(f.Label) + (f.Status === 'Ditutup' ? ' (ditutup)' : '') + '</option>';
 let td;
 const dk = () => 'd:' + S.formSel;
 function saveDraft() { try { const a = $('area').value, r = $('remark').value; if (a || r.trim()) localStorage.setItem(dk(), JSON.stringify({ a: a, r: r })); else localStorage.removeItem(dk()); } catch (e) {} }
@@ -376,7 +378,7 @@ function loadDraft() {
   try { const d = JSON.parse(localStorage.getItem(dk()) || 'null'); if (d) { $('area').value = d.a || ''; $('remark').value = d.r || ''; $('cnt').textContent = $('remark').value.length + '/250'; } } catch (e) {}
 }
 function fillForms() {
-  const keep = new Set([...document.querySelectorAll('#xForms input:checked')].map(i => i.value)), first = !document.querySelector('#xForms input');
+  const prevX = $('xForm').value;
   if (!formOf(S.formSel)) S.formSel = formOf(S.aktif) ? S.aktif : ((S.forms.filter(f => f.Status !== 'Ditutup')[0] || {}).ID || '');
   const op = S.forms.filter(f => f.Status !== 'Ditutup' || f.ID === S.formSel);
   $('fSel').innerHTML = op.length ? op.map(fopt).join('') : '<option value="">(tidak ada form terbuka)</option>'; $('fSel').value = S.formSel;
@@ -384,18 +386,20 @@ function fillForms() {
   $('fv').innerHTML = '<option value="all">Semua form</option>' + S.forms.map(fopt).join('');
   $('fv').value = cur === 'all' || formOf(cur) ? cur : 'all';
   $('eF').innerHTML = S.forms.map(fopt).join('');
-  $('xForms').innerHTML = S.forms.map(f => '<label><input type="checkbox" value="' + esc(f.ID) + '" ' + (keep.has(f.ID) || (first && f.ID === S.aktif) ? 'checked' : '') + ' onchange="hitungUnduh()"> ' + esc(f.Nama) + ' <span class="mut">(' + S.temuan.filter(t => t.FormID === f.ID).length + ' temuan)</span></label>').join('');
+  const cnt = id => S.temuan.filter(t => t.FormID === id).length;
+  $('xForm').innerHTML = '<option value="all">Semua form (digabung jadi satu file)</option>' + S.forms.map(f => '<option value="' + esc(f.ID) + '">' + esc(f.Label) + ' (' + cnt(f.ID) + ' temuan)</option>').join('');
+  $('xForm').value = prevX && (prevX === 'all' || formOf(prevX)) ? prevX : (formOf(S.aktif) ? S.aktif : 'all');
   renderFormBar(); renderFormAdmin(); hitungUnduh();
 }
 function renderFormBar() {
   const f = formOf(S.formSel), b = $('formBar'); let h, cls = 'fb';
   if (!f) { h = '<b>Belum ada form terbuka.</b><span>Minta admin membuat atau membuka form dulu.</span>'; cls += ' warn'; }
   else {
-    h = '<small>Anda mengisi form:</small><b>' + esc(f.Nama) + '</b><span>Auditor: ' + esc(f.Auditor || '—') + ' • ' + esc(tg(f.Tgl1)) + ' s/d ' + esc(tg(f.Tgl2)) + '</span>';
+    h = '<small>Anda mengisi form:</small><b>' + esc(f.Label) + '</b><span>Auditor: ' + esc(f.Auditor || '—') + ' • ' + esc(tg(f.Tgl1)) + ' s/d ' + esc(tg(f.Tgl2)) + '</span>';
     const hi = hariIni(), ak = formOf(S.aktif);
     if (f.Status === 'Ditutup') { h += '<em>Perhatian: form ini sudah ditutup. Pilih form lain sebelum menyimpan.</em>'; cls += ' bad'; }
     else {
-      if (f.ID !== S.aktif) { h += '<em>Perhatian: ini bukan form aktif' + (ak ? ' (form aktif: ' + esc(ak.Nama) + ')' : '') + '. Pastikan sudah benar.</em>'; cls += ' warn'; }
+      if (f.ID !== S.aktif) { h += '<em>Perhatian: ini bukan form aktif' + (ak ? ' (form aktif: ' + esc(ak.Label) + ')' : '') + '. Pastikan sudah benar.</em>'; cls += ' warn'; }
       if (hi > tg(f.Tgl2) || hi < tg(f.Tgl1)) { h += '<em>Perhatian: tanggal hari ini di luar periode form.</em>'; cls += ' warn'; }
     }
   }
@@ -414,8 +418,8 @@ function cekForm() {
     if (!r.success) return;
     const lama = S.aktif; S.forms = r.data.forms; S.aktif = r.data.aktif;
     const f = formOf(S.formSel);
-    if (S.aktif !== lama) toast('Form aktif sekarang: ' + ((formOf(S.aktif) || {}).Nama || 'tidak ada'));
-    if (f && f.Status === 'Ditutup') toast('Form "' + f.Nama + '" sudah ditutup. Pilih form lain sebelum menyimpan.', false);
+    if (S.aktif !== lama) toast('Form aktif sekarang: ' + ((formOf(S.aktif) || {}).Label || 'tidak ada'));
+    if (f && f.Status === 'Ditutup') toast('Form "' + f.Label + '" sudah ditutup. Pilih form lain sebelum menyimpan.', false);
     fillForms(); renderList();
   }).getForms();
 }
@@ -425,7 +429,7 @@ function renderFormAdmin() {
   if (!$('fAdmin')) return;
   $('fAdmin').innerHTML = S.forms.map(f => {
     const n = S.temuan.filter(t => t.FormID === f.ID).length, ak = f.ID === S.aktif, tut = f.Status === 'Ditutup';
-    return '<div class="fc"><div class="row"><b>' + esc(f.Nama) + '</b><span class="st ' + (tut ? 'g' : 'c') + '">' + (ak ? 'Aktif' : tut ? 'Ditutup' : 'Terbuka') + '</span></div>' +
+    return '<div class="fc"><div class="row"><b>' + esc(f.Label) + '</b><span class="st ' + (tut ? 'g' : 'c') + '">' + (ak ? 'Aktif' : tut ? 'Ditutup' : 'Terbuka') + '</span></div>' +
       '<div class="meta">Auditor: ' + esc(f.Auditor || '—') + ' • Auditee: ' + esc(f.Auditee || '—') + '<br>' + esc(f.Mill || '—') + ' • ' + esc(tg(f.Tgl1)) + ' s/d ' + esc(tg(f.Tgl2)) + ' • ' + n + ' temuan</div><div class="pbtn">' +
       (ak ? '' : '<button class="btn ghost" type="button" onclick="aktifkanForm(\'' + f.ID + '\')">' + (tut ? 'Lanjutkan' : 'Jadikan aktif') + '</button>') +
       '<button class="btn ghost" type="button" onclick="bukaFormModal(\'' + f.ID + '\')">Ubah kop</button>' +
@@ -435,6 +439,7 @@ function renderFormAdmin() {
 }
 function terapkanForm(r) {
   const i = S.forms.findIndex(f => f.ID === r.data.form.ID); if (i >= 0) S.forms[i] = r.data.form; else S.forms.push(r.data.form);
+  S.forms.sort((a, b) => a.Urut - b.Urut);
   if (r.data.aktif !== undefined) S.aktif = r.data.aktif;
   fillForms(); renderList();
 }
@@ -449,23 +454,22 @@ function bukaFormModal(id) {
 function simpanForm() {
   const o = { nama: $('fmN').value.trim(), mill: $('fmM').value.trim(), auditee: $('fmE').value.trim(), auditor: $('fmA').value.trim(), tgl1: $('fmT1').value, tgl2: $('fmT2').value, aktifkan: $('fmAk').checked }, edit = S.editForm;
   if (!o.tgl1 || !o.tgl2 || o.tgl2 < o.tgl1) return toast('Isi tanggal dengan benar (selesai tidak boleh sebelum mulai).', false);
-  if (!o.nama && !o.auditor) return toast('Isi nama form atau nama auditor.', false);
   const ok = r => { if (!r.success) return toast(r.message, false); closeM('mForm'); terapkanForm(r); toast(edit ? 'Form diperbarui' : 'Form dibuat'); }, ng = e => toast(e.message, false);
   if (edit) google.script.run.withSuccessHandler(ok).withFailureHandler(ng).ubahForm(S.pin, edit, o);
   else google.script.run.withSuccessHandler(ok).withFailureHandler(ng).buatForm(S.pin, o);
 }
 function aktifkanForm(id) {
   const f = formOf(id), kosong = !$('remark').value.trim() && !photos.b && !photos.a;
-  google.script.run.withSuccessHandler(r => { if (!r.success) return toast(r.message, false); if (kosong) S.formSel = id; terapkanForm(r); toast('Form aktif: ' + f.Nama); })
+  google.script.run.withSuccessHandler(r => { if (!r.success) return toast(r.message, false); if (kosong) S.formSel = id; terapkanForm(r); toast('Form aktif: ' + f.Label); })
     .withFailureHandler(e => toast(e.message, false)).setFormAktif(S.pin, id);
 }
 function tutupForm(id) {
-  const f = formOf(id); if (!confirm('Tutup form "' + f.Nama + '"? Temuan baru tidak bisa ditambahkan, tetapi bisa dibuka kembali lewat tombol Lanjutkan.')) return;
+  const f = formOf(id); if (!confirm('Tutup form "' + f.Label + '"? Temuan baru tidak bisa ditambahkan, tetapi bisa dibuka kembali lewat tombol Lanjutkan.')) return;
   google.script.run.withSuccessHandler(r => { if (!r.success) return toast(r.message, false); terapkanForm(r); toast('Form ditutup'); })
     .withFailureHandler(e => toast(e.message, false)).setFormStatus(S.pin, id, 'Ditutup');
 }
 function hapusForm(id) {
-  const f = formOf(id); if (!confirm('Hapus form kosong "' + f.Nama + '"?')) return;
+  const f = formOf(id); if (!confirm('Hapus form kosong "' + f.Label + '"?')) return;
   google.script.run.withSuccessHandler(r => {
     if (!r.success) return toast(r.message, false);
     S.forms = S.forms.filter(x => x.ID !== id); S.aktif = r.data.aktif; if (S.formSel === id) S.formSel = ''; fillForms(); renderList(); toast('Form dihapus');
@@ -473,8 +477,7 @@ function hapusForm(id) {
 }
 
 // ─ Unduh: pilih form ─
-function selForms() { return [...document.querySelectorAll('#xForms input:checked')].map(i => i.value); }
-function pilihSemuaForm(v) { document.querySelectorAll('#xForms input').forEach(i => { i.checked = v; }); hitungUnduh(); }
+function selForms() { const v = $('xForm').value; return v === 'all' ? S.forms.map(f => f.ID) : (v ? [v] : []); }
 function hitungUnduh() {
   const ids = selForms(), ar = new Set([...document.querySelectorAll('#xAreas input:checked')].map(i => i.value));
   const n = S.temuan.filter(t => ids.includes(t.FormID) && ar.has(t.AreaID)).length;

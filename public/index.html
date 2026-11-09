@@ -48,9 +48,8 @@
  <h1>Unduh Hasil Temuan</h1>
  <div class="card lock" id="gU"><b>Menu ini hanya untuk Admin</b><p class="mut">Hanya admin yang dapat membuka menu Unduh dan mengunduh hasil akhir.</p><button class="btn" onclick="openPin('unduh')">Masuk Mode Admin</button></div>
  <div class="card" id="cU">
-  <label>Form yang diunduh</label>
-  <div class="pbtn"><button class="btn ghost" type="button" onclick="pilihSemuaForm(true)">Pilih Semua</button><button class="btn ghost" type="button" onclick="pilihSemuaForm(false)">Kosongkan</button></div>
-  <div id="xForms"></div>
+  <label>Form yang diunduh</label><select id="xForm" onchange="hitungUnduh()"></select>
+  <label>Foto yang disertakan</label><select id="xFoto"><option value="both">Before dan After</option><option value="before">Before saja</option><option value="after">After saja</option></select>
   <label>Area yang disertakan</label><div id="xAreas"></div>
   <div class="info" id="xInfo"></div>
   <label>Format</label>
@@ -90,7 +89,7 @@
 <div class="modal z" id="mZoom" onclick="closeM('mZoom')"><img id="zImg" alt="Foto"></div>
 <div class="prev" id="mPrev"><div class="pbar"><button class="btn ghost" onclick="closeM('mPrev')">Tutup</button><button class="btn" onclick="closeM('mPrev');unduh()">Buka / Unduh Dokumen</button></div><div id="prevBody"></div></div>
 <div class="modal" id="mForm"><div class="sheet"><h2 id="fmTitle">Tambah Form Baru</h2>
- <label>Nama form <span class="mut">(boleh dikosongkan, otomatis dari nama auditor)</span></label><input id="fmN" placeholder="Contoh: Audit Pak Andi - Okt 2026">
+ <label>Keterangan form <span class="mut">(nomor "Form N" ditambahkan otomatis; boleh dikosongkan)</span></label><input id="fmN" placeholder="Contoh: Pak Andi">
  <label>Area / Mill</label><input id="fmM"><label>Auditee</label><input id="fmE"><label>Auditor</label><input id="fmA">
  <label>Tanggal mulai &amp; selesai</label><div class="row"><input type="date" id="fmT1"><input type="date" id="fmT2"></div>
  <label id="fmAkRow" class="chk"><input type="checkbox" id="fmAk" checked> Jadikan form aktif sekarang</label>

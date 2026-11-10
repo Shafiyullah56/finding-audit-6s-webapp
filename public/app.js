@@ -123,10 +123,11 @@ function simpan() {
 function debounceRender() { clearTimeout(tmr); tmr = setTimeout(renderList, 250); }
 function zoom(id) { $('zImg').src = thumb(id, 1200); $('mZoom').classList.add('on'); }
 function slot(t, k) {
-  const id = k === 'b' ? t.FotoBefore : t.FotoAfter, lb = k === 'b' ? 'Before' : 'After', ik = 'ad' + t.ID + k;
-  return id ? '<img loading="lazy" src="' + thumb(id) + '" alt="' + lb + '" onclick="zoom(\'' + id + '\')">'
-    : '<div class="add" tabindex="0" data-id="' + t.ID + '" data-k="' + k + '"><b>+ Foto ' + lb + '</b><small>Seret &amp; lepas, atau klik lalu Ctrl+V</small><span class="ab"><label for="' + ik + '">Pilih File</label><button type="button" onclick="tempelAdd(\'' + t.ID + '\',\'' + k + '\')">Tempel</button></span></div>'
-    + '<input type="file" id="' + ik + '" data-id="' + t.ID + '" data-k="' + k + '" accept="image/*" hidden onchange="pilihTambah(this)">';
+  const id = k === 'b' ? t.FotoBefore : t.FotoAfter, lb = k === 'b' ? 'Before' : 'After', ik = 'ad' + t.ID + k, ic = 'kc' + t.ID + k;
+  if (id) return '<div class="pw"><img loading="lazy" src="' + thumb(id) + '" alt="' + lb + '" onclick="zoom(\'' + id + '\')"><button type="button" class="del" onclick="hapusFotoKartu(\'' + t.ID + '\',\'' + k + '\')">Hapus foto ' + lb + '</button></div>';
+  return '<div class="add" tabindex="0" data-id="' + t.ID + '" data-k="' + k + '"><b>+ Foto ' + lb + '</b><small>Seret &amp; lepas, atau klik lalu Ctrl+V</small><span class="ab"><label for="' + ic + '">Kamera</label><label for="' + ik + '">Pilih File</label><button type="button" onclick="tempelAdd(\'' + t.ID + '\',\'' + k + '\')">Tempel</button></span></div>'
+    + '<input type="file" id="' + ik + '" data-id="' + t.ID + '" data-k="' + k + '" accept="image/*" hidden onchange="pilihTambah(this)">'
+    + '<input type="file" id="' + ic + '" data-id="' + t.ID + '" data-k="' + k + '" accept="image/*" capture="environment" hidden onchange="pilihTambah(this)">';
 }
 function renderList() {
   const qr = $('q').value.trim(), q = qr.toLowerCase(), fs = $('fs').value, fv = $('fv').value || 'all', hl = s => hlText(s, qr);
@@ -199,7 +200,7 @@ function tambahArea() {
 function bukaEdit(id) {
   const t = S.temuan.find(x => x.ID === id); if (!t) return; S.editId = id;
   const m = /^([A-Z]+\d?)-?(\d*)$/.exec(t.Kategori || '') || [];
-  $('eA').value = t.AreaID; $('eF').value = t.FormID; $('eR').value = t.Remark || ''; renderEditFoto(t); $('eK').value = m[1] || ''; $('eN').value = m[2] || ''; $('eP').value = t.PIC || ''; $('eS').value = t.Status || 'Open'; $('mEdit').classList.add('on');
+  $('eA').value = t.AreaID; $('eF').value = t.FormID; $('eR').value = t.Remark || ''; $('eK').value = m[1] || ''; $('eN').value = m[2] || ''; $('eP').value = t.PIC || ''; $('eS').value = t.Status || 'Open'; $('mEdit').classList.add('on');
 }
 function simpanEdit() {
   const t = S.temuan.find(x => x.ID === S.editId), k = $('eK').value, n = $('eN').value;
@@ -342,20 +343,6 @@ function hlText(s, q) {
 }
 
 // ═ Admin: foto pada form edit ═
-function renderEditFoto(t) {
-  $('eFoto').innerHTML = [['b', 'Before', t.FotoBefore], ['a', 'After', t.FotoAfter]].map(p => p[2]
-    ? '<div class="ef"><img src="' + thumb(p[2]) + '" alt="' + p[1] + '"><button class="btn danger" type="button" onclick="hapusFotoAdmin(\'' + p[0] + '\')">Hapus foto ' + p[1] + '</button></div>'
-    : '<div class="ef mut">Foto ' + p[1] + ' belum ada</div>').join('');
-}
-function hapusFotoAdmin(k) {
-  const t = S.temuan.find(x => x.ID === S.editId); if (!t) return; const lb = k === 'b' ? 'Before' : 'After';
-  if (!confirm('Hapus foto ' + lb + ' dari temuan #' + t.No + '?')) return;
-  google.script.run.withSuccessHandler(r => {
-    if (!r.success) return toast(r.message, false);
-    if (k === 'b') t.FotoBefore = ''; else t.FotoAfter = '';
-    renderEditFoto(t); renderList(); toast('Foto ' + lb + ' dihapus');
-  }).withFailureHandler(e => toast(e.message, false)).hapusFotoTemuan(S.pin, S.editId, k === 'b' ? 'before' : 'after');
-}
 
 // ═ Unduh otomatis ke perangkat ═
 function simpanBlob(name, b64) {
@@ -439,14 +426,14 @@ function renderFormAdmin() {
 }
 function terapkanForm(r) {
   const i = S.forms.findIndex(f => f.ID === r.data.form.ID); if (i >= 0) S.forms[i] = r.data.form; else S.forms.push(r.data.form);
-  S.forms.sort((a, b) => a.Urut - b.Urut);
+  S.forms.sort((a, b) => nat(a.Label, b.Label));
   if (r.data.aktif !== undefined) S.aktif = r.data.aktif;
   fillForms(); renderList();
 }
 function bukaFormModal(id) {
   S.editForm = id || null; const f = id ? formOf(id) : null, last = S.forms[S.forms.length - 1] || {};
   $('fmTitle').textContent = f ? 'Ubah Kop Form' : 'Tambah Form Baru';
-  $('fmN').value = f ? f.Nama : ''; $('fmM').value = f ? f.Mill : (last.Mill || 'FINISHING PF 1');
+  $('fmN').value = f ? f.Nama : saranNama(); $('fmM').value = f ? f.Mill : (last.Mill || 'FINISHING PF 1');
   $('fmE').value = f ? f.Auditee : ''; $('fmA').value = f ? f.Auditor : '';
   $('fmT1').value = f ? tg(f.Tgl1) : hariIni(); $('fmT2').value = f ? tg(f.Tgl2) : hariIni();
   $('fmAk').checked = !f; $('fmAkRow').style.display = f ? 'none' : ''; $('mForm').classList.add('on');
@@ -454,6 +441,7 @@ function bukaFormModal(id) {
 function simpanForm() {
   const o = { nama: $('fmN').value.trim(), mill: $('fmM').value.trim(), auditee: $('fmE').value.trim(), auditor: $('fmA').value.trim(), tgl1: $('fmT1').value, tgl2: $('fmT2').value, aktifkan: $('fmAk').checked }, edit = S.editForm;
   if (!o.tgl1 || !o.tgl2 || o.tgl2 < o.tgl1) return toast('Isi tanggal dengan benar (selesai tidak boleh sebelum mulai).', false);
+  if (!o.nama) return toast('Isi nama form (contoh: Form 3 - Pak Andi).', false);
   const ok = r => { if (!r.success) return toast(r.message, false); closeM('mForm'); terapkanForm(r); toast(edit ? 'Form diperbarui' : 'Form dibuat'); }, ng = e => toast(e.message, false);
   if (edit) google.script.run.withSuccessHandler(ok).withFailureHandler(ng).ubahForm(S.pin, edit, o);
   else google.script.run.withSuccessHandler(ok).withFailureHandler(ng).buatForm(S.pin, o);
@@ -497,6 +485,30 @@ function rapikanFoto() {
       (d.sisa.length ? '\n\nFolder berikut masih berisi file salinan yang tidak dipakai aplikasi (periksa, lalu hapus manual bila sudah yakin):\n- ' + d.sisa.join('\n- ') : ''));
   }).withFailureHandler(e => { sel(); toast(e.message, false); }).rapikanFoto(S.pin);
 }
+// ═ Hapus foto (semua orang, dengan konfirmasi) ═
+let hf = null;
+function hapusFotoKartu(id, k) {
+  const t = S.temuan.find(x => x.ID === id); if (!t) return; const fid = k === 'b' ? t.FotoBefore : t.FotoAfter;
+  hf = { id: id, k: k }; $('hfImg').src = thumb(fid, 500); $('hfTeks').textContent = 'Foto ' + (k === 'b' ? 'Before' : 'After') + ' pada temuan #' + t.No + ' (' + areaName(t.AreaID) + ').';
+  $('mHapusFoto').classList.add('on');
+}
+function hapusFotoYa() {
+  if (!hf) return; const h = hf, t = S.temuan.find(x => x.ID === h.id), b = $('hfOk'); b.disabled = true;
+  google.script.run.withSuccessHandler(r => {
+    b.disabled = false; closeM('mHapusFoto'); hf = null;
+    if (!r.success) return toast(r.message, false);
+    if (t) { if (h.k === 'b') t.FotoBefore = ''; else t.FotoAfter = ''; }
+    renderList(); toast('Foto dihapus');
+  }).withFailureHandler(e => { b.disabled = false; toast(e.message, false); }).hapusFotoTemuan(h.id, h.k === 'b' ? 'before' : 'after');
+}
+
+// ═ Urutan form mengikuti nama (angka dibandingkan sebagai angka) ═
+const nat = (a, b) => {
+  const x = String(a || '').toLowerCase().match(/\d+|\D+/g) || [], y = String(b || '').toLowerCase().match(/\d+|\D+/g) || [];
+  for (let i = 0; i < Math.min(x.length, y.length); i++) { const p = x[i], q = y[i]; if (/^\d/.test(p) && /^\d/.test(q)) { const d = Number(p) - Number(q); if (d) return d; } else if (p !== q) return p < q ? -1 : 1; }
+  return x.length - y.length;
+};
+function saranNama() { return 'Form ' + (S.forms.reduce((m, x) => { const g = /^Form\s*(\d+)/i.exec(x.Nama || ''); return g ? Math.max(m, Number(g[1])) : m; }, 0) + 1); }
 // ═ PWA: tombol "Pasang" & pendaftaran service worker ═
 let tundaPasang = null;
 window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); tundaPasang = e; $('btnInstall').style.display = ''; });

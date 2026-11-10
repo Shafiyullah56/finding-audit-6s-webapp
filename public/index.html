@@ -81,7 +81,6 @@
  <label>Form</label><select id="eF"></select>
  <label>Area / Lokasi</label><select id="eA"></select>
  <label>Remark of Finding</label><textarea id="eR" maxlength="250"></textarea>
- <label>Foto</label><div id="eFoto" class="two"></div>
  <label>Finding Category</label><div class="row"><select id="eK"></select><input id="eN" type="number" min="1" placeholder="No. (mis. 5)"></div>
  <label>PIC</label><input id="eP"><label>Status</label><select id="eS"><option>Open</option><option>Close</option></select>
  <div class="row"><button class="btn ghost" onclick="closeM('mEdit')">Batal</button><button class="btn" onclick="simpanEdit()">Simpan</button></div>
@@ -89,11 +88,14 @@
 <div class="modal z" id="mZoom" onclick="closeM('mZoom')"><img id="zImg" alt="Foto"></div>
 <div class="prev" id="mPrev"><div class="pbar"><button class="btn ghost" onclick="closeM('mPrev')">Tutup</button><button class="btn" onclick="closeM('mPrev');unduh()">Buka / Unduh Dokumen</button></div><div id="prevBody"></div></div>
 <div class="modal" id="mForm"><div class="sheet"><h2 id="fmTitle">Tambah Form Baru</h2>
- <label>Keterangan form <span class="mut">(nomor "Form N" ditambahkan otomatis; boleh dikosongkan)</span></label><input id="fmN" placeholder="Contoh: Pak Andi">
+ <label>Nama form <span class="mut">(urutan form di aplikasi dan Drive mengikuti nama ini, mis. Form 1, Form 2 - Pak Andi)</span></label><input id="fmN" placeholder="Contoh: Form 3 - Pak Andi">
  <label>Area / Mill</label><input id="fmM"><label>Auditee</label><input id="fmE"><label>Auditor</label><input id="fmA">
  <label>Tanggal mulai &amp; selesai</label><div class="row"><input type="date" id="fmT1"><input type="date" id="fmT2"></div>
  <label id="fmAkRow" class="chk"><input type="checkbox" id="fmAk" checked> Jadikan form aktif sekarang</label>
  <div class="row"><button class="btn ghost" onclick="closeM('mForm')">Batal</button><button class="btn" onclick="simpanForm()">Simpan</button></div></div></div>
+<div class="modal c" id="mHapusFoto"><div class="sheet"><h2>Hapus foto ini?</h2><img id="hfImg" class="hfimg" alt="">
+ <p id="hfTeks" class="mut"></p><p><b>Foto akan dihapus dari temuan dan tidak bisa dikembalikan lewat aplikasi.</b></p>
+ <div class="row"><button class="btn ghost" onclick="closeM('mHapusFoto')">Batal</button><button class="btn danger" id="hfOk" onclick="hapusFotoYa()">Ya, Hapus</button></div></div></div>
 <div class="modal c" id="mCrop"><div class="sheet cs"><h2>Potong Foto</h2><p class="mut">Geser kotak atau tarik sudutnya untuk memotong foto.</p>
  <canvas id="cvs"></canvas>
  <div class="pbtn"><button class="btn ghost" type="button" onclick="cropRatio(0)">Bebas</button><button class="btn ghost" type="button" onclick="cropRatio(4/3)">4:3</button><button class="btn ghost" type="button" onclick="cropRatio(1)">1:1</button><button class="btn ghost" type="button" onclick="cropRotate()">Putar</button></div>

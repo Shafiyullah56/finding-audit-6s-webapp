@@ -134,19 +134,20 @@ function renderList() {
   const base = S.temuan.filter(t => fv === 'all' || t.FormID === fv);
   $('sT').textContent = base.length; $('sO').textContent = base.filter(t => t.Status !== 'Close').length; $('sC').textContent = base.filter(t => t.Status === 'Close').length;
   const open = new Set([...document.querySelectorAll('.grp.open')].map(g => g.dataset.a)), known = new Set(S.areas.map(a => a.ID));
-  const cocok = (t, an) => (!fs || t.Status === fs) && (!q || (t.Remark + ' ' + an + ' ' + t.PIC + ' ' + t.Kategori).toLowerCase().includes(q));
-  const card = t => '<div class="it ' + (t.Status === 'Close' ? 'cl' : '') + '"><b>#' + esc(t.No) + '</b> <span class="st ' + (t.Status === 'Close' ? 'c' : '') + '">' + esc(t.Status) + '</span> <span class="meta">' + esc(String(t.Tanggal).slice(0, 10)) + '</span><p>' + hl(t.Remark) + '</p><div class="ph">' + slot(t, 'b') + slot(t, 'a') + '</div><div class="meta">Kategori: ' + (t.Kategori ? hl(t.Kategori) : '—') + ' • PIC: ' + (t.PIC ? hl(t.PIC) : '—') + '</div>' +
+  const fl = t => (formOf(t.FormID) || {}).Label || '';
+  const cocok = (t, an) => (!fs || t.Status === fs) && (!q || (t.Remark + ' ' + an + ' ' + t.PIC + ' ' + t.Kategori + ' ' + fl(t)).toLowerCase().includes(q));
+  const urut = (x, y) => S.forms.findIndex(f => f.ID === x.FormID) - S.forms.findIndex(f => f.ID === y.FormID) || byNo(x, y); // per form (urutan nama), lalu nomor
+  // "Semua form": nama form tampil di atas tanggal pada setiap kartu
+  const card = t => '<div class="it ' + (t.Status === 'Close' ? 'cl' : '') + '">' + (fv === 'all' ? '<div class="fm">' + hl(fl(t)) + '</div>' : '') + '<b>#' + esc(t.No) + '</b> <span class="st ' + (t.Status === 'Close' ? 'c' : '') + '">' + esc(t.Status) + '</span> <span class="meta">' + esc(String(t.Tanggal).slice(0, 10)) + '</span><p>' + hl(t.Remark) + '</p><div class="ph">' + slot(t, 'b') + slot(t, 'a') + '</div><div class="meta">Kategori: ' + (t.Kategori ? hl(t.Kategori) : '—') + ' • PIC: ' + (t.PIC ? hl(t.PIC) : '—') + '</div>' +
     (S.pin ? '<button onclick="bukaEdit(\'' + t.ID + '\')">Lengkapi / Edit</button>' : '') + '</div>';
-  const grp = (f, a, its) => {
+  const grp = (a, its) => {
     if (!its.length) return '';
-    const key = f.ID + '|' + a.ID;
-    return '<div class="grp ' + (open.has(key) || q ? 'open' : '') + '" data-a="' + esc(key) + '"><div class="gh" onclick="this.parentNode.classList.toggle(\'open\')"><span>' + hl(a.Nama) + (fv === 'all' ? ' <small class="mut">· ' + esc(f.Label) + '</small>' : '') + '</span><span class="pill">' + its.length + ' temuan</span></div><div class="gb">' + its.map(card).join('') + '</div></div>';
+    return '<div class="grp ' + (open.has(a.ID) || q ? 'open' : '') + '" data-a="' + esc(a.ID) + '"><div class="gh" onclick="this.parentNode.classList.toggle(\'open\')"><span>' + hl(a.Nama) + '</span><span class="pill">' + its.length + ' temuan</span></div><div class="gb">' + its.map(card).join('') + '</div></div>';
   };
-  // temuan yang areanya tidak ada di daftar area tidak boleh hilang diam-diam: ditampilkan di kelompok khusus
+  // satu kelompok per area (gabungan semua form); temuan dengan area tidak dikenal tidak boleh hilang diam-diam
   const yatim = { ID: '?', Nama: 'Area tidak dikenal (pilih area lewat Lengkapi / Edit)' };
-  const html = S.forms.filter(f => fv === 'all' || f.ID === fv).map(f =>
-    S.areas.map(a => grp(f, a, base.filter(t => t.FormID === f.ID && t.AreaID === a.ID && cocok(t, a.Nama)).sort(byNo))).join('') +
-    grp(f, yatim, base.filter(t => t.FormID === f.ID && !known.has(t.AreaID) && cocok(t, '')).sort(byNo))).join('');
+  const html = S.areas.map(a => grp(a, base.filter(t => t.AreaID === a.ID && cocok(t, a.Nama)).sort(urut))).join('') +
+    grp(yatim, base.filter(t => !known.has(t.AreaID) && cocok(t, '')).sort(urut));
   $('list').innerHTML = html || '<div class="card">Belum ada temuan.</div>';
 }
 function bukaCropTambah(id, k, f) {

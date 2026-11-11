@@ -185,3 +185,76 @@ mark{background:#FFEB3B;color:#000;border-radius:2px;padding:0 1px}
     display: none !important;
   }
 }
+
+/* Styling Tombol Refresh */
+.btn-refresh {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #2563EB;
+  color: #ffffff;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.btn-refresh:hover { background: #1D4ED8; }
+.btn-refresh:disabled { opacity: 0.6; cursor: not-allowed; }
+.btn-refresh.spinning svg {
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { 100% { transform: rotate(360deg); } }
+
+/* Styling Toolbar Pensil di Modal Crop */
+.btn-pencil.active {
+  background: #DC2626 !important;
+  color: #ffffff !important;
+  border-color: #DC2626 !important;
+}
+.pen-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  background: #F3F4F6;
+  padding: 10px 14px;
+  border-radius: 8px;
+  margin-top: 10px;
+  border: 1px solid #E5E7EB;
+}
+.pen-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.pen-item select, .pen-item input[type="range"] {
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px solid #D1D5DB;
+}
+.color-presets {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.color-presets span {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid #FFFFFF;
+  box-shadow: 0 0 0 1px #D1D5DB;
+}
+.color-presets span:hover {
+  transform: scale(1.15);
+}
+.danger-ghost {
+  background: #FEE2E2 !important;
+  color: #991B1B !important;
+  border: 1px solid #FCA5A5 !important;
+}

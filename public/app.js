@@ -267,20 +267,49 @@ function preview() {
   if (!total) return toast('Tidak ada temuan pada form dan area tersebut.', false);
   $('prevBody').innerHTML = body; $('mPrev').classList.add('on');
 }
+
+function hitungUnduh() {
+  const ids = selForms(), ar = new Set([...document.querySelectorAll('#xAreas input:checked')].map(i => i.value));
+  const n = S.temuan.filter(t => ids.includes(t.FormID) && ar.has(t.AreaID)).length;
+  const maxLimit = maks(); // Bernilai 1000 dari server
+  
+  $('xInfo').textContent = n + ' temuan terpilih (maksimal ' + maxLimit + ' per file)' + (n > maxLimit ? ' — kurangi form atau area yang dipilih.' : '');
+  $('xInfo').className = 'info' + (n > maxLimit ? ' bad' : '');
+  $('btnX').disabled = !n || n > maxLimit;
+}
+
 function unduh() {
   if (!S.pin) return toast('Hanya admin yang dapat mengunduh hasil akhir.', false);
   const o = readX(); if (!o.formIds.length) return toast('Pilih minimal satu form.', false);
   if (!o.areaIds.length) return toast('Pilih minimal satu area.', false);
-  const b = $('btnX'); b.disabled = true; b.textContent = 'Menyiapkan dokumen… (bisa 1 menit)'; $('xLink').style.display = 'none';
+
+  const b = $('btnX'); b.disabled = true; b.textContent = 'Menyiapkan dokumen… (bisa 1–2 menit)'; $('xLink').style.display = 'none';
   const selesai = () => { b.textContent = 'Buka / Unduh Dokumen'; hitungUnduh(); };
+
   google.script.run.withSuccessHandler(r => {
     selesai();
     if (!r.success) return toast(r.message, false);
-    $('xLink').href = r.data.url; $('xLink').style.display = 'block'; $('xLink').textContent = o.format === 'gdoc' ? 'Buka Google Doc' : 'Belum terunduh? Klik di sini';
-    if (o.format === 'gdoc') window.open(r.data.url, '_blank');
-    else if (r.data.b64) { simpanBlob(r.data.name, r.data.b64); toast('Dokumen terunduh & tersimpan di folder Unduhan Drive'); }
-    else { window.open(r.data.url, '_blank'); toast('Dokumen siap, tersimpan di folder Unduhan Drive'); }
-  }).withFailureHandler(e => { selesai(); toast(e.message, false); }).exportHasil(S.pin, o);
+
+    $('xLink').href = r.data.url;
+    $('xLink').style.display = 'block';
+    $('xLink').textContent = o.format === 'gdoc' ? 'Buka Google Doc' : 'Klik di sini jika file belum terunduh';
+
+    if (o.format === 'gdoc') {
+      window.open(r.data.url, '_blank');
+      toast('Dokumen tersimpan di Drive & dibuka di tab baru');
+    } else if (r.data.b64) {
+      // LANGSUNG TERUNDUH OTOMATIS KE PERANGKAT (HP / LAPTOP)
+      simpanBlob(r.data.name, r.data.b64);
+      toast('Dokumen berhasil terunduh ke perangkat & tersimpan di Google Drive');
+    } else {
+      window.open(r.data.url, '_blank');
+      toast('Dokumen tersimpan di Google Drive');
+    }
+  }).withFailureHandler(e => {
+    selesai();
+    toast('Gagal: ' + e.message, false);
+  }).exportHasil(S.pin, o);
+}
 }
 $('pin').addEventListener('keydown', e => { if (e.key === 'Enter') loginAdmin(); });
 document.addEventListener('DOMContentLoaded', init);

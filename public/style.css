@@ -97,10 +97,10 @@ mark{background:#FFEB3B;color:#000;border-radius:2px;padding:0 1px}
    2. ATURAN CETAK HARD-LOCKED A4 LANDSCAPE (PRINT TO PDF)
    ========================================================= */
 @media print {
-  /* Pengaturan Ukuran Kertas & Margin Printer Bawaan */
+  /* 1. Pengaturan Kertas A4 Landscape */
   @page {
-    size: A4 landscape !important; /* Paksa kertas ke format A4 Landscape */
-    margin: 8mm !important;        /* Margin standar cetak */
+    size: A4 landscape !important;
+    margin: 8mm !important;
   }
 
   html, body {
@@ -110,12 +110,12 @@ mark{background:#FFEB3B;color:#000;border-radius:2px;padding:0 1px}
     background: #ffffff !important;
   }
 
-  /* Sembunyikan elemen UI aplikasi */
+  /* 2. Sembunyikan elemen UI aplikasi */
   body * {
     visibility: hidden;
   }
 
-  /* Tampilkan hanya dokumen pratinjau */
+  /* 3. Tampilkan hanya modal pratinjau */
   #mPrev, 
   #mPrev *,
   .paper,
@@ -145,38 +145,38 @@ mark{background:#FFEB3B;color:#000;border-radius:2px;padding:0 1px}
     padding: 0 !important;
   }
 
-  /* Kategori Bingkai Foto Seragam & Jelas (Tanda Temuan Tidak Terpotong) */
-  .pt td img, 
-  .ph img, 
-  .paper table img {
-    width: 100% !important;
-    height: 135px !important;
-    max-height: 135px !important;
-    object-fit: contain !important;
-    object-position: center !important;
-    background-color: #ffffff !important;
-    border: 1px solid #d1d5db !important;
-    border-radius: 4px !important;
-    box-sizing: border-box !important;
-    display: block !important;
-    margin: 0 auto !important;
-  }
-
-  /* Aturan Baris Tabel Agar Tidak Terpotong di Tengah Halaman */
+  /* 4. Bebaskan tinggi baris tabel agar fleksibel mengikuti foto portrait */
   .pt tr {
-    height: 145px !important;
+    height: auto !important; /* Jangan dikunci ke angka tetap */
     page-break-inside: avoid !important;
     break-inside: avoid !important;
   }
 
-  /* Aturan Header Judul Area */
-  .pa {
-    page-break-before: auto;
-    page-break-after: avoid !important;
-    break-after: avoid !important;
+  .pt td {
+    vertical-align: middle !important;
+    padding: 4px !important;
+    overflow: visible !important;
   }
 
-  /* Sembunyikan Navigasi & Tombol UI saat dicetak */
+  /* 5. Formula Foto Portrait: Utuh, Besar, Tanpa Potong */
+  .pt td img, 
+  .ph img, 
+  .paper table img {
+    width: auto !important;           /* Lebar menyesuaikan rasio asli foto */
+    max-width: 100% !important;        /* Jangan melebihi lebar kolom */
+    height: auto !important;          /* Tinggi menyesuaikan rasio asli */
+    max-height: 165px !important;      /* Batas tinggi optimal di kertas A4 */
+    object-fit: contain !important;    /* Tampilkan 100% isi foto tanpa terpotong */
+    object-position: center !important;
+    background-color: #f9fafb !important;
+    border: 1px solid #d1d5db !important;
+    border-radius: 4px !important;
+    box-sizing: border-box !important;
+    display: block !important;
+    margin: 0 auto !important;         /* Posisikan di tengah kolom */
+  }
+
+  /* 6. Sembunyikan tombol UI saat dicetak */
   #mPrev .modal-foot, 
   #mPrev .close, 
   #mPrev button,

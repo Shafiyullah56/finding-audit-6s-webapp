@@ -125,25 +125,48 @@ function slot(t, k) {
     + '<input type="file" id="' + ik + '" data-id="' + t.ID + '" data-k="' + k + '" accept="image/*" hidden onchange="pilihTambah(this)">'
     + '<input type="file" id="' + ic + '" data-id="' + t.ID + '" data-k="' + k + '" accept="image/*" capture="environment" hidden onchange="pilihTambah(this)">';
 }
+
+// Menyimpan area mana saja yang dibuka manual oleh user
+S.openGroups = S.openGroups || new Set();
+
+function toggleGrp(el, areaId) {
+  const grp = el.parentNode;
+  const isOpen = grp.classList.toggle('open');
+  if (isOpen) S.openGroups.add(areaId);
+  else S.openGroups.delete(areaId);
+}
+
 function renderList() {
   const qr = $('q').value.trim(), q = qr.toLowerCase(), fs = $('fs').value, fv = $('fv').value || 'all', hl = s => hlText(s, qr);
   const base = S.temuan.filter(t => fv === 'all' || t.FormID === fv);
-  $('sT').textContent = base.length; $('sO').textContent = base.filter(t => t.Status !== 'Close').length; $('sC').textContent = base.filter(t => t.Status === 'Close').length;
-  const open = new Set([...document.querySelectorAll('.grp.open')].map(g => g.dataset.a)), known = new Set(S.areas.map(a => a.ID));
+  $('sT').textContent = base.length; 
+  $('sO').textContent = base.filter(t => t.Status !== 'Close').length; 
+  $('sC').textContent = base.filter(t => t.Status === 'Close').length;
+
+  const known = new Set(S.areas.map(a => a.ID));
   const fl = t => (formOf(t.FormID) || {}).Label || '';
   const cocok = (t, an) => (!fs || t.Status === fs) && (!q || (t.Remark + ' ' + an + ' ' + t.PIC + ' ' + t.Kategori + ' ' + fl(t)).toLowerCase().includes(q));
   const urut = (x, y) => S.forms.findIndex(f => f.ID === x.FormID) - S.forms.findIndex(f => f.ID === y.FormID) || byNo(x, y);
+
   const card = t => '<div class="it ' + (t.Status === 'Close' ? 'cl' : '') + '">' + (fv === 'all' ? '<div class="fm">' + hl(fl(t)) + '</div>' : '') + '<b>#' + esc(t.No) + '</b> <span class="st ' + (t.Status === 'Close' ? 'c' : '') + '">' + esc(t.Status) + '</span> <span class="meta">' + esc(String(t.Tanggal).slice(0, 10)) + '</span><p>' + hl(t.Remark) + '</p><div class="ph">' + slot(t, 'b') + slot(t, 'a') + '</div><div class="meta">Kategori: ' + (t.Kategori ? hl(t.Kategori) : '—') + ' • PIC: ' + (t.PIC ? hl(t.PIC) : '—') + '</div>' +
     (S.pin ? '<button onclick="bukaEdit(\'' + t.ID + '\')">Lengkapi / Edit</button>' : '') + '</div>';
+
   const grp = (a, its) => {
     if (!its.length) return '';
-    return '<div class="grp ' + (open.has(a.ID) || q ? 'open' : '') + '" data-a="' + esc(a.ID) + '"><div class="gh" onclick="this.parentNode.classList.toggle(\'open\')"><span>' + hl(a.Nama) + '</span><span class="pill">' + its.length + ' temuan</span></div><div class="gb">' + its.map(card).join('') + '</div></div>';
+    // JIKA q ADA ISI: buka kartu area yang ada hasil cocok.
+    // JIKA q KOSONG (DILAPUS): otomatis kembali tertutup seperti awal (kecuali jika diklik manual oleh user).
+    const isExpanded = q ? true : S.openGroups.has(a.ID);
+    return '<div class="grp ' + (isExpanded ? 'open' : '') + '" data-a="' + esc(a.ID) + '">' +
+      '<div class="gh" onclick="toggleGrp(this, \'' + esc(a.ID) + '\')"><span>' + hl(a.Nama) + '</span><span class="pill">' + its.length + ' temuan</span></div>' +
+      '<div class="gb">' + its.map(card).join('') + '</div></div>';
   };
+
   const yatim = { ID: '?', Nama: 'Area tidak dikenal (pilih area lewat Lengkapi / Edit)' };
   const html = S.areas.map(a => grp(a, base.filter(t => t.AreaID === a.ID && cocok(t, a.Nama)).sort(urut))).join('') +
     grp(yatim, base.filter(t => !known.has(t.AreaID) && cocok(t, '')).sort(urut));
   $('list').innerHTML = html || '<div class="card">Belum ada temuan.</div>';
 }
+
 function bukaCropTambah(id, k, f) {
   if (!isImg(f)) return toast('File harus berupa gambar.', false);
   openCrop(k, f, { id: id, k: k });
@@ -306,6 +329,144 @@ $('pin').addEventListener('keydown', e => { if (e.key === 'Enter') loginAdmin();
 document.addEventListener('DOMContentLoaded', init);
 
 const C = { k: null, src: null, W: 0, H: 0, sel: null, ratio: 0, drag: null };
+// Inisialisasi state Pensil pada Objek Canvas C
+C.pencilMode = false;
+C.penShape = 'free';
+C.penColor = '#EF4444';
+C.penSize = 6;
+C.undoStack = [];
+
+function togglePencilMode() {
+  C.pencilMode = !C.pencilMode;
+  $('btnPencil').classList.toggle('active', C.pencilMode);
+  $('penBar').style.display = C.pencilMode ? 'flex' : 'none';
+  drawCrop();
+}
+
+function setPenColor(col) {
+  C.penColor = col;
+  $('penColor').value = col;
+}
+
+function undoDraw() {
+  if (C.undoStack && C.undoStack.length > 0) {
+    const lastState = C.undoStack.pop();
+    const ctx = C.src.getContext('2d');
+    ctx.putImageData(lastState, 0, 0);
+    drawCrop();
+  }
+}
+
+// Reset state pensil setiap kali modal crop dibuka
+const oldOpenCrop = openCrop;
+openCrop = function(k, file, tgt) {
+  C.pencilMode = false;
+  C.undoStack = [];
+  C.penShape = 'free';
+  if ($('btnPencil')) $('btnPencil').classList.remove('active');
+  if ($('penBar')) $('penBar').style.display = 'none';
+  oldOpenCrop(k, file, tgt);
+};
+
+// Modifikasi Event Pointer pada Canvas untuk Menggambar Coretan
+cvs.addEventListener('pointerdown', e => {
+  const p = cpos(e);
+  
+  if (C.pencilMode) {
+    // Simpan history canvas untuk fitur Undo
+    const ctx = C.src.getContext('2d');
+    if (!C.undoStack) C.undoStack = [];
+    C.undoStack.push(ctx.getImageData(0, 0, C.src.width, C.src.height));
+    
+    // Skala koordinat dari layar pratinjau ke ukuran asli C.src
+    const scaleX = C.src.width / C.W, scaleY = C.src.height / C.H;
+    const sx = p[0] * scaleX, sy = p[1] * scaleY;
+    
+    C.drawing = true;
+    C.startPt = { x: sx, y: sy };
+    C.lastPt = { x: sx, y: sy };
+    cvs.setPointerCapture(e.pointerId);
+    e.preventDefault();
+    return;
+  }
+
+  // Logika Drag Crop bawaan
+  const s = C.sel, cs = corners(), hit = cs.findIndex(c => Math.abs(c[0] - p[0]) < 26 && Math.abs(c[1] - p[1]) < 26);
+  if (hit >= 0) C.drag = { t: 'r', ax: cs[3 - hit][0], ay: cs[3 - hit][1] };
+  else if (p[0] > s.x && p[0] < s.x + s.w && p[1] > s.y && p[1] < s.y + s.h) C.drag = { t: 'm', dx: p[0] - s.x, dy: p[1] - s.y };
+  else return;
+  cvs.setPointerCapture(e.pointerId); e.preventDefault();
+});
+
+cvs.addEventListener('pointermove', e => {
+  const p = cpos(e);
+  
+  // Menggambar Coretan / Bentuk
+  if (C.pencilMode && C.drawing) {
+    const ctx = C.src.getContext('2d');
+    const scaleX = C.src.width / C.W, scaleY = C.src.height / C.H;
+    const sx = p[0] * scaleX, sy = p[1] * scaleY;
+    
+    ctx.strokeStyle = C.penColor;
+    ctx.fillStyle = C.penColor;
+    ctx.lineWidth = C.penSize * scaleX;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    if (C.penShape === 'free') {
+      ctx.beginPath();
+      ctx.moveTo(C.lastPt.x, C.lastPt.y);
+      ctx.lineTo(sx, sy);
+      ctx.stroke();
+      C.lastPt = { x: sx, y: sy };
+    } else {
+      // Restore gambar awal saat drag bentuk (Lingkaran, Kotak, Panah)
+      ctx.putImageData(C.undoStack[C.undoStack.length - 1], 0, 0);
+      ctx.beginPath();
+      const dx = sx - C.startPt.x, dy = sy - C.startPt.y;
+      
+      if (C.penShape === 'circle') {
+        const r = Math.sqrt(dx * dx + dy * dy);
+        ctx.arc(C.startPt.x, C.startPt.y, r, 0, 2 * Math.PI);
+        ctx.stroke();
+      } else if (C.penShape === 'rect') {
+        ctx.strokeRect(C.startPt.x, C.startPt.y, dx, dy);
+      } else if (C.penShape === 'arrow') {
+        // Gambar garis panah
+        const headlen = Math.max(12, ctx.lineWidth * 3);
+        const angle = Math.atan2(dy, dx);
+        ctx.moveTo(C.startPt.x, C.startPt.y);
+        ctx.lineTo(sx, sy);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(sx, sy);
+        ctx.lineTo(sx - headlen * Math.cos(angle - Math.PI / 6), sy - headlen * Math.sin(angle - Math.PI / 6));
+        ctx.lineTo(sx - headlen * Math.cos(angle + Math.PI / 6), sy - headlen * Math.sin(angle + Math.PI / 6));
+        ctx.closePath();
+        ctx.fill();
+      }
+    }
+    drawCrop();
+    return;
+  }
+
+  // Drag Crop Bawaan
+  if (!C.drag) return; const d = C.drag, s = C.sel;
+  if (d.t === 'm') { s.x = Math.min(Math.max(0, p[0] - d.dx), C.W - s.w); s.y = Math.min(Math.max(0, p[1] - d.dy), C.H - s.h); }
+  else {
+    const sx = p[0] >= d.ax ? 1 : -1, sy = p[1] >= d.ay ? 1 : -1;
+    let w = Math.min(Math.abs(p[0] - d.ax), sx > 0 ? C.W - d.ax : d.ax), h = Math.min(Math.abs(p[1] - d.ay), sy > 0 ? C.H - d.ay : d.ay);
+    if (C.ratio) { if (w / Math.max(h, 1) > C.ratio) w = h * C.ratio; else h = w / C.ratio; }
+    w = Math.max(w, 30); h = Math.max(h, 30);
+    C.sel = { x: Math.max(0, Math.min(sx > 0 ? d.ax : d.ax - w, C.W - w)), y: Math.max(0, Math.min(sy > 0 ? d.ay : d.ay - h, C.H - h)), w: w, h: h };
+  }
+  drawCrop();
+});
+
+['pointerup', 'pointercancel'].forEach(t => cvs.addEventListener(t, () => { 
+  C.drag = null; 
+  C.drawing = false; 
+}));
 const cvs = $('cvs');
 function openCrop(k, file, tgt) {
   const im = new Image(), u = URL.createObjectURL(file);

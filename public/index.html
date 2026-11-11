@@ -1,174 +1,392 @@
-<!DOCTYPE html><html lang="id"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Jejak Temuan 6S</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#1E3A8A">
-<link rel="apple-touch-icon" href="icons/icon-192.png">
-<link rel="stylesheet" href="style.css"></head><body>
-<header class="bar"><div class="brand"><img class="logo" id="lg" alt="6S"><div><b>Jejak Temuan 6S</b><small>FINISHING MILL</small></div></div>
-<div class="hb"><button class="btn ghost" id="btnInstall" style="display:none" onclick="pasangApp()">Pasang</button><button class="btn ghost" id="btnAdm" onclick="openPin('admin')">Admin</button></div></header>
-<main>
-<section id="sec-input" class="sec on">
- <h1>Input Temuan</h1>
- <div id="formBar" class="fb"></div><p class="mut">Isi temuan, lalu upload foto Before dan/atau After (salah satu sudah cukup).</p>
- <div class="card">
-  <label>Form <span class="mut">(otomatis form aktif; ubah bila perlu)</span></label><select id="fSel" onchange="gantiForm()"></select>
-  <label>Area / Lokasi <i>*</i></label><select id="area" onchange="saveDraft()"></select>
-  <label>Remark of Finding <i>*</i> <span class="mut" id="cnt">0/250</span></label>
-  <textarea id="remark" maxlength="250" placeholder="Contoh: Pilar terdapat lubang" oninput="cnt.textContent=this.value.length+'/250';draftSoon()"></textarea>
-  <div class="two">
-   <div class="fz"><div class="phh">Foto Before <span class="mut">(opsional)</span></div>
-    <div class="drop" id="dz-b" data-k="b" tabindex="0"><img id="pv-b" alt=""><div class="hint"><b>Seret &amp; lepas foto di sini</b><br><small>atau klik kotak ini lalu tekan Ctrl+V untuk menempel</small></div></div>
-    <label class="btn cam" for="kb">Ambil Foto dengan Kamera</label>
-    <div class="pbtn"><label class="btn ghost" for="fb">Pilih File</label><button class="btn ghost" type="button" onclick="tempel('b')">Tempel</button><button class="btn ghost" type="button" onclick="hapusFoto('b')">Hapus</button></div>
-    <input type="file" id="fb" data-k="b" accept="image/*" hidden onchange="pilih(this)">
-    <input type="file" id="kb" data-k="b" accept="image/*" capture="environment" hidden onchange="pilih(this)"></div>
-   <div class="fz"><div class="phh">Foto After <span class="mut">(opsional)</span></div>
-    <div class="drop" id="dz-a" data-k="a" tabindex="0"><img id="pv-a" alt=""><div class="hint"><b>Seret &amp; lepas foto di sini</b><br><small>atau klik kotak ini lalu tekan Ctrl+V untuk menempel</small></div></div>
-    <label class="btn cam" for="ka">Ambil Foto dengan Kamera</label>
-    <div class="pbtn"><label class="btn ghost" for="fa">Pilih File</label><button class="btn ghost" type="button" onclick="tempel('a')">Tempel</button><button class="btn ghost" type="button" onclick="hapusFoto('a')">Hapus</button></div>
-    <input type="file" id="fa" data-k="a" accept="image/*" hidden onchange="pilih(this)">
-    <input type="file" id="ka" data-k="a" accept="image/*" capture="environment" hidden onchange="pilih(this)"></div>
-  </div>
-  <p class="info">Foto dikompres otomatis. Foto yang belum ada bisa ditambahkan nanti dari menu Daftar.</p>
-  <button class="btn" id="btnSave" onclick="simpan()">Simpan Temuan</button>
-  <button class="btn ghost" onclick="resetForm()">Reset Form</button>
- </div>
-</section>
-<section id="sec-daftar" class="sec">
- <h1>Daftar Temuan</h1>
- <div class="stats"><div><small>TOTAL</small><b id="sT">0</b></div><div><small>OPEN</small><b id="sO" class="amb">0</b></div><div><small>CLOSE</small><b id="sC" class="grn">0</b></div></div>
- <select id="fv" onchange="renderList()"></select>
- <input id="q" placeholder="Cari remark, area, atau PIC…" oninput="debounceRender()">
- <select id="fs" onchange="renderList()"><option value="">Semua status</option><option>Open</option><option>Close</option></select>
- <div id="list"><div class="skel"></div><div class="skel"></div></div>
- <div class="flt">
-  <input type="search" id="q" placeholder="Cari remark, area, PIC..." oninput="debounceRender()">
-  <select id="fs" onchange="renderList()">
-    <option value="">Semua Status</option>
-    <option value="Open">Open</option>
-    <option value="Close">Close</option>
-  </select>
-  <select id="fv" onchange="renderList()"></select>
-  <!-- Tombol Refresh Data Terbaru -->
-  <button type="button" id="btnRefresh" class="btn-refresh" onclick="refreshDaftar()" title="Refresh Data Terbaru">
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
-    <span>Refresh</span>
-  </button>
-</div>
-</section>
-<section id="sec-unduh" class="sec">
- <h1>Unduh Hasil Temuan</h1>
- <div class="card lock" id="gU"><b>Menu ini hanya untuk Admin</b><p class="mut">Hanya admin yang dapat membuka menu Unduh dan mengunduh hasil akhir.</p><button class="btn" onclick="openPin('unduh')">Masuk Mode Admin</button></div>
- <div class="card" id="cU">
-  <label>Form yang diunduh</label><select id="xForm" onchange="hitungUnduh()"></select>
-  <label>Foto yang disertakan</label><select id="xFoto"><option value="both">Before dan After</option><option value="before">Before saja</option><option value="after">After saja</option></select>
-  <label>Area yang disertakan</label><div id="xAreas"></div>
-  <div class="info" id="xInfo"></div>
-  <label>Format</label>
-  <div class="fmt"><label><input type="radio" name="fmt" value="xlsx" checked> Spreadsheet (.xlsx)</label>
-  <label><input type="radio" name="fmt" value="gdoc"> Google Dokumen</label>
-  <label><input type="radio" name="fmt" value="pdf"> PDF</label></div>
-  <button class="btn ghost" onclick="preview()">Pratinjau Tabel</button>
-  <button class="btn" id="btnX" onclick="unduh()">Buka / Unduh Dokumen</button>
-  <a id="xLink" class="btn ghost" style="display:none" target="_blank" rel="noopener">Buka / Unduh Berkas</a>
- </div>
-</section>
-<section id="sec-admin" class="sec">
- <h1>Mode Admin</h1>
- <div class="card lock" id="gA"><b>Menu ini hanya untuk Admin</b><p class="mut">Masukkan PIN untuk mengelola area, PIN, dan melengkapi temuan.</p><button class="btn" onclick="openPin('admin')">Masuk Mode Admin</button></div>
- <div class="card" id="cA"><h2>Kelola Form</h2><div id="fAdmin"></div><button class="btn" onclick="bukaFormModal()">Tambah Form Baru</button><hr><h2>Perawatan</h2><p class="mut">Merapikan foto di Google Drive: foto lama dan foto di folder yang salah dipindah ke folder form dan area yang benar, lalu dinamai ulang. Tidak ada foto yang dihapus.</p><button class="btn ghost" id="btnRapi" onclick="rapikanFoto()">Rapikan Folder Foto</button><hr><p>Ketuk temuan di menu Daftar untuk melengkapi Category, PIC, Status, mengganti area, atau menghapus.</p>
-  <label>Tambah area baru</label><input id="aN" placeholder="Nama area"><input id="aM" placeholder="Mill (mis. FINISHING PF 1)" style="margin-top:8px"><button class="btn" onclick="tambahArea()">Tambah Area</button>
-  <label>PIN lama</label><input id="pOld" type="password" inputmode="numeric" maxlength="6">
-  <label>PIN baru (6 digit)</label><input id="pNew" type="password" inputmode="numeric" maxlength="6">
-  <button class="btn" onclick="gantiPin()">Simpan PIN Baru</button>
-  <button class="btn ghost" onclick="keluarAdmin()">Keluar Mode Admin</button></div>
-</section>
-</main>
-<nav class="nav"><a onclick="navigateTo('input')" data-s="input">Input</a><a onclick="navigateTo('daftar')" data-s="daftar">Daftar</a><a onclick="navigateTo('unduh')" data-s="unduh">Unduh</a><a onclick="navigateTo('admin')" data-s="admin">Admin</a></nav>
-
-<div class="modal" id="mPin"><div class="sheet"><h2>Masuk Mode Admin</h2><p class="mut">Masukkan 6 digit PIN.</p>
- <input id="pin" type="password" inputmode="numeric" maxlength="6" autocomplete="off" class="pin">
- <div class="row"><button class="btn ghost" onclick="closeM('mPin')">Batal</button><button class="btn" onclick="loginAdmin()">Buka Kunci</button></div></div></div>
-<div class="modal" id="mEdit"><div class="sheet"><h2>Lengkapi Temuan</h2>
- <label>Form</label><select id="eF"></select>
- <label>Area / Lokasi</label><select id="eA"></select>
- <label>Remark of Finding</label><textarea id="eR" maxlength="250"></textarea>
- <label>Finding Category</label><div class="row"><select id="eK"></select><input id="eN" type="number" min="1" placeholder="No. (mis. 5)"></div>
- <label>PIC</label><input id="eP"><label>Status</label><select id="eS"><option>Open</option><option>Close</option></select>
- <div class="row"><button class="btn ghost" onclick="closeM('mEdit')">Batal</button><button class="btn" onclick="simpanEdit()">Simpan</button></div>
- <button class="btn danger" onclick="hapus()">Hapus Temuan</button></div></div>
-<div class="modal z" id="mZoom" onclick="closeM('mZoom')"><img id="zImg" alt="Foto"></div>
- 
-<div class="prev" id="mPrev"><div class="pbar"><button class="btn ghost" onclick="closeM('mPrev')">Tutup</button><button class="btn" onclick="closeM('mPrev');unduh()">Buka / Unduh Dokumen</button>
-<!-- Tambahkan tombol ini di dalam footer modal #mPrev -->
-<button type="button" class="btn primary" onclick="cetakPDF()">Cetak / Simpan PDF</button></div><div id="prevBody"></div></div>
-<div class="modal" id="mForm"><div class="sheet"><h2 id="fmTitle">Tambah Form Baru</h2>
- <label>Nama form <span class="mut">(urutan form di aplikasi dan Drive mengikuti nama ini, mis. Form 1, Form 2 - Pak Andi)</span></label><input id="fmN" placeholder="Contoh: Form 3 - Pak Andi">
- <label>Area / Mill</label><input id="fmM"><label>Auditee</label><input id="fmE"><label>Auditor</label><input id="fmA">
- <label>Tanggal mulai &amp; selesai</label><div class="row"><input type="date" id="fmT1"><input type="date" id="fmT2"></div>
- <label id="fmAkRow" class="chk"><input type="checkbox" id="fmAk" checked> Jadikan form aktif sekarang</label>
- <div class="row"><button class="btn ghost" onclick="closeM('mForm')">Batal</button><button class="btn" onclick="simpanForm()">Simpan</button></div></div></div>
-<div class="modal c" id="mHapusFoto"><div class="sheet"><h2>Hapus foto ini?</h2><img id="hfImg" class="hfimg" alt="">
- <p id="hfTeks" class="mut"></p><p><b>Foto akan dihapus dari temuan dan tidak bisa dikembalikan lewat aplikasi.</b></p>
- <div class="row"><button class="btn ghost" onclick="closeM('mHapusFoto')">Batal</button><button class="btn danger" id="hfOk" onclick="hapusFotoYa()">Ya, Hapus</button></div></div></div>
-<div id="mCrop" class="modal">
-  <div class="modal-body crop-body">
-    <h3>Potong & Tandai Foto</h3>
-    <div class="crop-wrap">
-      <canvas id="cvs"></canvas>
-    </div>
-    
-    <!-- Toolbar Rasio & Mode Pensil -->
-    <div class="crop-toolbar">
-      <button type="button" class="btn-crop" onclick="cropRatio(0)">Bebas</button>
-      <button type="button" class="btn-crop" onclick="cropRatio(1)">1:1</button>
-      <button type="button" class="btn-crop" onclick="cropRatio(4/3)">4:3</button>
-      <button type="button" class="btn-crop" onclick="cropRatio(16/9)">16:9</button>
-      <button type="button" class="btn-crop" onclick="cropRotate()">↻ Putar</button>
-      <button type="button" id="btnPencil" class="btn-crop btn-pencil" onclick="togglePencilMode()">✏️ Coret / Tandai</button>
-    </div>
-
-    <!-- Sub-Toolbar Coretan (Tampil saat tombol Pensil diklik) -->
-    <div id="penBar" class="pen-bar" style="display:none;">
-      <div class="pen-item">
-        <label>Bentuk:</label>
-        <select id="penShape" onchange="C.penShape = this.value">
-          <option value="free">Pensil (Bebas)</option>
-          <option value="circle">Lingkaran</option>
-          <option value="rect">Kotak</option>
-          <option value="arrow">Panah</option>
-        </select>
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Jejak Temuan 6S</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="config.js"></script>
+</head>
+<body>
+  <header class="hdr">
+    <div class="brand">
+      <img id="lg" alt="6S Logo" class="logo">
+      <div>
+        <h1>Jejak Temuan 6S</h1>
+        <small>Audit &amp; Improvement Finishing Mill</small>
       </div>
-      <div class="pen-item">
-        <label>Warna:</label>
-        <input type="color" id="penColor" value="#EF4444" onchange="setPenColor(this.value)">
-        <div class="color-presets">
-          <span style="background:#EF4444" onclick="setPenColor('#EF4444')"></span>
-          <span style="background:#F59E0B" onclick="setPenColor('#F59E0B')"></span>
-          <span style="background:#10B981" onclick="setPenColor('#10B981')"></span>
-          <span style="background:#3B82F6" onclick="setPenColor('#3B82F6')"></span>
-          <span style="background:#FFFFFF" onclick="setPenColor('#FFFFFF')"></span>
-          <span style="background:#000000" onclick="setPenColor('#000000')"></span>
+    </div>
+    <button type="button" id="btnAdm" class="btn-adm" onclick="openPin()">Admin</button>
+  </header>
+
+  <nav class="nav">
+    <a data-s="input" onclick="navigateTo('input')" class="on">Input Temuan</a>
+    <a data-s="daftar" onclick="navigateTo('daftar')">Daftar Temuan</a>
+    <a data-s="unduh" onclick="navigateTo('unduh')">Unduh / Cetak</a>
+    <a data-s="admin" onclick="navigateTo('admin')">Pengaturan Admin</a>
+  </nav>
+
+  <main class="content">
+    <!-- SECTION INPUT TEMUAN -->
+    <section id="sec-input" class="sec on">
+      <div id="formBar" class="fb"></div>
+
+      <div class="card">
+        <h2>Form Input Temuan Audit</h2>
+
+        <div class="form-group">
+          <label for="fSel">Pilih Form Audit Aktif:</label>
+          <select id="fSel" onchange="gantiForm()"></select>
+        </div>
+
+        <div class="form-group">
+          <label for="area">Pilih Area / Sub-Area:</label>
+          <select id="area" onchange="saveDraft()"></select>
+        </div>
+
+        <div class="form-group">
+          <label for="remark">Remark of Finding (Catatan Temuan):</label>
+          <textarea id="remark" maxlength="250" placeholder="Tuliskan detail temuan masalah..." oninput="$('cnt').textContent = this.value.length + '/250'; draftSoon()"></textarea>
+          <small id="cnt" class="cnt">0/250</small>
+        </div>
+
+        <div class="grid-foto">
+          <div id="dz-b" class="drop" data-k="b" tabindex="0">
+            <img id="pv-b" alt="Foto Before">
+            <div class="drop-text">
+              <b>+ Foto BEFORE</b>
+              <small>Klik/Seret gambar ke sini atau Ctrl+V</small>
+            </div>
+            <div class="drop-actions">
+              <label for="inp-b-cam">Kamera</label>
+              <label for="inp-b-file">File</label>
+              <button type="button" onclick="tempel('b')">Tempel</button>
+              <button type="button" class="btn-del-img" onclick="hapusFoto('b')">Hapus</button>
+            </div>
+            <input type="file" id="inp-b-cam" data-k="b" accept="image/*" capture="environment" hidden onchange="pilih(this)">
+            <input type="file" id="inp-b-file" data-k="b" accept="image/*" hidden onchange="pilih(this)">
+          </div>
+
+          <div id="dz-a" class="drop" data-k="a" tabindex="0">
+            <img id="pv-a" alt="Foto After">
+            <div class="drop-text">
+              <b>+ Foto AFTER</b>
+              <small>Klik/Seret gambar ke sini atau Ctrl+V</small>
+            </div>
+            <div class="drop-actions">
+              <label for="inp-a-cam">Kamera</label>
+              <label for="inp-a-file">File</label>
+              <button type="button" onclick="tempel('a')">Tempel</button>
+              <button type="button" class="btn-del-img" onclick="hapusFoto('a')">Hapus</button>
+            </div>
+            <input type="file" id="inp-a-cam" data-k="a" accept="image/*" capture="environment" hidden onchange="pilih(this)">
+            <input type="file" id="inp-a-file" data-k="a" accept="image/*" hidden onchange="pilih(this)">
+          </div>
+        </div>
+
+        <button type="button" id="btnSave" class="btn primary btn-block" onclick="simpan()">Simpan Temuan</button>
+      </div>
+    </section>
+
+    <!-- SECTION DAFTAR TEMUAN -->
+    <section id="sec-daftar" class="sec">
+      <div class="stats-bar">
+        <span>Total Temuan: <b id="sT">0</b></span>
+        <span>Open: <b id="sO" class="badge-open">0</b></span>
+        <span>Close: <b id="sC" class="badge-close">0</b></span>
+      </div>
+
+      <div class="flt">
+        <input type="search" id="q" placeholder="Cari remark, area, PIC..." oninput="debounceRender()">
+        <select id="fs" onchange="renderList()">
+          <option value="">Semua Status</option>
+          <option value="Open">Open</option>
+          <option value="Close">Close</option>
+        </select>
+        <select id="fv" onchange="renderList()"></select>
+        <button type="button" id="btnRefresh" class="btn-refresh" onclick="refreshDaftar()" title="Refresh Data Terbaru">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+          <span>Refresh</span>
+        </button>
+      </div>
+
+      <div id="list" class="list-container"></div>
+    </section>
+
+    <!-- SECTION UNDUH / PRATINJAU -->
+    <section id="sec-unduh" class="sec">
+      <div class="card">
+        <h2>Ekspor Laporan Audit 6S</h2>
+        
+        <div class="form-group">
+          <label>Format Dokumen Laporan:</label>
+          <div class="radio-group">
+            <label><input type="radio" name="fmt" value="pdf" checked> PDF (Pratinjau / Cetak Langsung)</label>
+            <label><input type="radio" name="fmt" value="gdoc"> Google Doc (Edit di Cloud)</label>
+            <label><input type="radio" name="fmt" value="xlsx"> Spreadsheet / Excel (.xlsx)</label>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="xForm">Form yang Diproses:</label>
+          <select id="xForm" onchange="hitungUnduh()"></select>
+        </div>
+
+        <div class="form-group">
+          <label for="xFoto">Pilihan Foto Laporan:</label>
+          <select id="xFoto" onchange="hitungUnduh()">
+            <option value="both">Foto Before &amp; After</option>
+            <option value="before">Foto Before Saja</option>
+            <option value="after">Foto After Saja</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Filter Area yang Diikutsertakan:</label>
+          <div id="xAreas" class="check-grid"></div>
+        </div>
+
+        <div id="xInfo" class="info"></div>
+
+        <div class="action-buttons">
+          <button type="button" class="btn secondary" onclick="preview()">Pratinjau Dokumen (A4)</button>
+          <button type="button" id="btnX" class="btn primary" onclick="unduh()">Buka / Unduh Dokumen</button>
+        </div>
+        <a id="xLink" class="download-link" target="_blank" style="display:none;"></a>
+      </div>
+    </section>
+
+    <!-- SECTION ADMIN -->
+    <section id="sec-admin" class="sec">
+      <div id="gU" class="card">
+        <h2>Hak Akses Admin</h2>
+        <p>Masukkan PIN 6-digit untuk membuka fitur pengelolaan form dan area.</p>
+        <button type="button" class="btn primary" onclick="openPin('admin')">Masukkan PIN Admin</button>
+      </div>
+
+      <div id="cU" style="display:none;">
+        <div class="card">
+          <h2>Manajemen Form Audit</h2>
+          <button type="button" class="btn primary" onclick="bukaFormModal()">+ Buat Form Baru</button>
+          <div id="fAdmin" class="form-list"></div>
+        </div>
+
+        <div class="card">
+          <h2>Tambah Area / Sub-Area Baru</h2>
+          <div class="form-group">
+            <label for="aN">Nama Area Baru:</label>
+            <input type="text" id="aN" placeholder="Contoh: Lorong NWR">
+          </div>
+          <div class="form-group">
+            <label for="aM">Mill / Unit:</label>
+            <input type="text" id="aM" placeholder="FINISHING PF 1">
+          </div>
+          <button type="button" class="btn primary" onclick="tambahArea()">Tambah Area</button>
+        </div>
+
+        <div class="card">
+          <h2>Merapikan Storage Google Drive</h2>
+          <p>Merapikan folder dan menamai ulang file foto temuan di Google Drive.</p>
+          <button type="button" id="btnRapi" class="btn secondary" onclick="rapikanFoto()">Rapikan Folder Foto</button>
+        </div>
+
+        <div class="card">
+          <h2>Keamanan PIN Admin</h2>
+          <div class="form-group">
+            <label for="pOld">PIN Lama (6 digit):</label>
+            <input type="password" id="pOld" maxlength="6" inputmode="numeric">
+          </div>
+          <div class="form-group">
+            <label for="pNew">PIN Baru (6 digit):</label>
+            <input type="password" id="pNew" maxlength="6" inputmode="numeric">
+          </div>
+          <button type="button" class="btn primary" onclick="gantiPin()">Ganti PIN Admin</button>
+          <button type="button" class="btn danger" onclick="keluarAdmin()">Keluar dari Admin</button>
         </div>
       </div>
-      <div class="pen-item">
-        <label>Ukuran:</label>
-        <input type="range" id="penSize" min="2" max="25" value="6" oninput="C.penSize = Number(this.value)">
-      </div>
-      <button type="button" class="btn-crop danger-ghost" onclick="undoDraw()">↩ Undo</button>
-    </div>
+    </section>
+  </main>
 
-    <div class="modal-foot">
-      <button type="button" class="btn ghost" onclick="cropCancel()">Batal</button>
-      <button type="button" class="btn primary" onclick="cropDone(false)">Gunakan Foto</button>
+  <!-- MODAL CROP & DRAWING -->
+  <div id="mCrop" class="modal">
+    <div class="modal-body crop-body">
+      <h3>Potong &amp; Tandai Foto</h3>
+      <div class="crop-wrap">
+        <canvas id="cvs"></canvas>
+      </div>
+      
+      <div class="crop-toolbar">
+        <button type="button" class="btn-crop" onclick="cropRatio(0)">Bebas</button>
+        <button type="button" class="btn-crop" onclick="cropRatio(1)">1:1</button>
+        <button type="button" class="btn-crop" onclick="cropRatio(4/3)">4:3</button>
+        <button type="button" class="btn-crop" onclick="cropRatio(16/9)">16:9</button>
+        <button type="button" class="btn-crop" onclick="cropRotate()">↻ Putar</button>
+        <button type="button" id="btnPencil" class="btn-crop btn-pencil" onclick="togglePencilMode()">✏️ Coret / Tandai</button>
+      </div>
+
+      <div id="penBar" class="pen-bar" style="display:none;">
+        <div class="pen-item">
+          <label>Bentuk:</label>
+          <select id="penShape" onchange="C.penShape = this.value">
+            <option value="free">Pensil (Bebas)</option>
+            <option value="circle">Lingkaran</option>
+            <option value="rect">Kotak</option>
+            <option value="arrow">Panah</option>
+          </select>
+        </div>
+        <div class="pen-item">
+          <label>Warna:</label>
+          <input type="color" id="penColor" value="#EF4444" onchange="setPenColor(this.value)">
+          <div class="color-presets">
+            <span style="background:#EF4444" onclick="setPenColor('#EF4444')"></span>
+            <span style="background:#F59E0B" onclick="setPenColor('#F59E0B')"></span>
+            <span style="background:#10B981" onclick="setPenColor('#10B981')"></span>
+            <span style="background:#3B82F6" onclick="setPenColor('#3B82F6')"></span>
+            <span style="background:#FFFFFF" onclick="setPenColor('#FFFFFF')"></span>
+            <span style="background:#000000" onclick="setPenColor('#000000')"></span>
+          </div>
+        </div>
+        <div class="pen-item">
+          <label>Ukuran:</label>
+          <input type="range" id="penSize" min="2" max="25" value="6" oninput="C.penSize = Number(this.value)">
+        </div>
+        <button type="button" class="btn-crop danger-ghost" onclick="undoDraw()">↩ Undo</button>
+      </div>
+
+      <div class="modal-foot">
+        <button type="button" class="btn ghost" onclick="cropCancel()">Batal</button>
+        <button type="button" class="btn primary" onclick="cropDone(false)">Gunakan Foto</button>
+      </div>
     </div>
   </div>
-</div>
- <canvas id="cvs"></canvas>
- <div class="pbtn"><button class="btn ghost" type="button" onclick="cropRatio(0)">Bebas</button><button class="btn ghost" type="button" onclick="cropRatio(4/3)">4:3</button><button class="btn ghost" type="button" onclick="cropRatio(1)">1:1</button><button class="btn ghost" type="button" onclick="cropRotate()">Putar</button></div>
- <div class="row"><button class="btn ghost" onclick="cropCancel()">Batal</button><button class="btn ghost" onclick="cropDone(true)">Pakai Foto Utuh</button><button class="btn" onclick="cropDone(false)">Selesai</button></div></div></div>
-<div id="toast"></div>
-<script src="config.js"></script>
-<script src="app.js"></script></body></html>
+
+  <!-- MODAL PIN -->
+  <div id="mPin" class="modal">
+    <div class="modal-body modal-sm">
+      <h3>PIN Admin</h3>
+      <div class="form-group">
+        <input type="password" id="pin" maxlength="6" placeholder="Masukkan 6 digit PIN" inputmode="numeric">
+      </div>
+      <div class="modal-foot">
+        <button type="button" class="btn ghost" onclick="closeM('mPin')">Batal</button>
+        <button type="button" class="btn primary" onclick="loginAdmin()">Masuk</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL EDIT TEMUAN -->
+  <div id="mEdit" class="modal">
+    <div class="modal-body">
+      <h3>Edit / Lengkapi Temuan</h3>
+      <div class="form-group">
+        <label for="eF">Form:</label>
+        <select id="eF"></select>
+      </div>
+      <div class="form-group">
+        <label for="eA">Area:</label>
+        <select id="eA"></select>
+      </div>
+      <div class="form-group">
+        <label for="eR">Remark:</label>
+        <textarea id="eR"></textarea>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="eK">Kategori:</label>
+          <select id="eK"></select>
+        </div>
+        <div class="form-group">
+          <label for="eN">Sub (Angka):</label>
+          <input type="text" id="eN" placeholder="1-5">
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="eP">PIC:</label>
+        <input type="text" id="eP" placeholder="Nama Person in Charge">
+      </div>
+      <div class="form-group">
+        <label for="eS">Status:</label>
+        <select id="eS">
+          <option value="Open">Open</option>
+          <option value="Close">Close</option>
+        </select>
+      </div>
+      <div class="modal-foot">
+        <button type="button" class="btn danger" onclick="hapus()">Hapus Temuan</button>
+        <button type="button" class="btn ghost" onclick="closeM('mEdit')">Batal</button>
+        <button type="button" class="btn primary" onclick="simpanEdit()">Simpan</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL KOP FORM -->
+  <div id="mForm" class="modal">
+    <div class="modal-body">
+      <h3 id="fmTitle">Form Audit</h3>
+      <div class="form-group">
+        <label for="fmN">Nama Form:</label>
+        <input type="text" id="fmN">
+      </div>
+      <div class="form-group">
+        <label for="fmM">Mill / Unit:</label>
+        <input type="text" id="fmM">
+      </div>
+      <div class="form-group">
+        <label for="fmE">Auditee:</label>
+        <input type="text" id="fmE">
+      </div>
+      <div class="form-group">
+        <label for="fmA">Auditor:</label>
+        <input type="text" id="fmA">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="fmT1">Tanggal Mulai:</label>
+          <input type="date" id="fmT1">
+        </div>
+        <div class="form-group">
+          <label for="fmT2">Tanggal Selesai:</label>
+          <input type="date" id="fmT2">
+        </div>
+      </div>
+      <div id="fmAkRow" class="form-group checkbox">
+        <label><input type="checkbox" id="fmAk" checked> Jadikan Form Aktif</label>
+      </div>
+      <div class="modal-foot">
+        <button type="button" class="btn ghost" onclick="closeM('mForm')">Batal</button>
+        <button type="button" class="btn primary" onclick="simpanForm()">Simpan Form</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL PRATINJAU DOKUMEN LAPORAN -->
+  <div id="mPrev" class="modal modal-lg">
+    <div class="modal-body prev-modal-body">
+      <div id="prevBody" class="prev-content"></div>
+      <div class="modal-foot">
+        <button type="button" class="btn ghost" onclick="closeM('mPrev')">Tutup</button>
+        <button type="button" class="btn primary" onclick="cetakPDF()">Cetak / Simpan PDF</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL HAPUS FOTO -->
+  <div id="mHapusFoto" class="modal">
+    <div class="modal-body modal-sm">
+      <h3>Hapus Foto?</h3>
+      <img id="hfImg" alt="Pratinjau Hapus" class="img-prev-del">
+      <p id="hfTeks"></p>
+      <div class="modal-foot">
+        <button type="button" class="btn ghost" onclick="closeM('mHapusFoto')">Batal</button>
+        <button type="button" id="hfOk" class="btn danger" onclick="hapusFotoYa()">Hapus Foto</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <button type="button" id="btnInstall" class="btn-install" style="display:none;" onclick="pasangApp()">+ Pasang Aplikasi</button>
+
+  <script src="app.js"></script>
+</body>
+</html>

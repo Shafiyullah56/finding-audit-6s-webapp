@@ -86,7 +86,9 @@
  <div class="row"><button class="btn ghost" onclick="closeM('mEdit')">Batal</button><button class="btn" onclick="simpanEdit()">Simpan</button></div>
  <button class="btn danger" onclick="hapus()">Hapus Temuan</button></div></div>
 <div class="modal z" id="mZoom" onclick="closeM('mZoom')"><img id="zImg" alt="Foto"></div>
-<div class="prev" id="mPrev"><div class="pbar"><button class="btn ghost" onclick="closeM('mPrev')">Tutup</button><button class="btn" onclick="closeM('mPrev');unduh()">Buka / Unduh Dokumen</button></div><div id="prevBody"></div></div>
+<div class="prev" id="mPrev"><div class="pbar"><button class="btn ghost" onclick="closeM('mPrev')">Tutup</button><button class="btn" onclick="closeM('mPrev');unduh()">Buka / Unduh Dokumen</button>
+<!-- Tambahkan tombol ini di dalam footer modal #mPrev -->
+<button type="button" class="btn primary" onclick="cetakPDF()">Cetak / Simpan PDF</button></div><div id="prevBody"></div></div>
 <div class="modal" id="mForm"><div class="sheet"><h2 id="fmTitle">Tambah Form Baru</h2>
  <label>Nama form <span class="mut">(urutan form di aplikasi dan Drive mengikuti nama ini, mis. Form 1, Form 2 - Pak Andi)</span></label><input id="fmN" placeholder="Contoh: Form 3 - Pak Andi">
  <label>Area / Mill</label><input id="fmM"><label>Auditee</label><input id="fmE"><label>Auditor</label><input id="fmA">

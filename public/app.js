@@ -265,35 +265,18 @@ function cetakPDF() {
 }
 
 function unduh() {
-  if (!S.pin) return toast('Hanya admin yang dapat mengunduh hasil akhir.', false);
-  const o = readX(); if (!o.formIds.length) return toast('Pilih minimal satu form.', false);
+  const o = readX();
+  if (!o.formIds.length) return toast('Pilih minimal satu form.', false);
   if (!o.areaIds.length) return toast('Pilih minimal satu area.', false);
 
-  const b = $('btnX'); b.disabled = true; b.textContent = 'Menyiapkan dokumen… (bisa 1–2 menit)'; $('xLink').style.display = 'none';
-  const selesai = () => { b.textContent = 'Buka / Unduh Dokumen'; hitungUnduh(); };
-
-  google.script.run.withSuccessHandler(r => {
-    selesai();
-    if (!r.success) return toast(r.message, false);
-
-    $('xLink').href = r.data.url;
-    $('xLink').style.display = 'block';
-    $('xLink').textContent = o.format === 'gdoc' ? 'Buka Google Doc' : 'Klik di sini jika file belum terunduh';
-
-    if (o.format === 'gdoc') {
-      window.open(r.data.url, '_blank');
-      toast('Dokumen tersimpan di Drive & dibuka di tab baru');
-    } else if (r.data.b64) {
-      simpanBlob(r.data.name, r.data.b64);
-      toast('Dokumen berhasil terunduh ke perangkat & tersimpan di Google Drive');
-    } else {
-      window.open(r.data.url, '_blank');
-      toast('Dokumen tersimpan di Google Drive');
-    }
-  }).withFailureHandler(e => {
-    selesai();
-    toast('Gagal: ' + e.message, false);
-  }).exportHasil(S.pin, o);
+  // Jika memilih format PDF atau Google Doc, langsung alihkan ke Pratinjau
+  if (o.format === 'pdf' || o.format === 'gdoc') {
+    preview();
+    toast('Silakan klik "Cetak / Simpan PDF" pada layar pratinjau.');
+  } else {
+    // Jika nanti Anda menambahkan ekspor Excel instan (SheetJS)
+    toast('Format belum didukung atau gunakan pratinjau untuk cetak PDF.', false);
+  }
 }
 
 $('pin').addEventListener('keydown', e => { if (e.key === 'Enter') loginAdmin(); });

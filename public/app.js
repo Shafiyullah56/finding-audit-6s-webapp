@@ -48,7 +48,7 @@ function init() {
   navigateTo('input');
   google.script.run.withSuccessHandler(r => {
     if (!r.success) return toast(r.message, false);
-    Object.assign(S, r.data); fillAreas(); $('lg').src = S.cfg.logo6s;
+    Object.assign(S, r.data); fillAreas(); $('lg').src = '/icon/logo6S.png';
     $('eK').innerHTML = '<option value="">-</option>' + S.kat.map(k => '<option>' + k + '</option>').join('');
     S.formSel = formOf(S.aktif) ? S.aktif : ((S.forms.filter(f => f.Status !== 'Ditutup')[0] || {}).ID || '');
     S.fv = S.formSel || 'all'; fillForms(); $('fv').value = S.fv; loadDraft(); renderList();
@@ -269,8 +269,8 @@ function preview() {
       its.map(t => '<tr><td class="no">' + (globalNo++) + '</td><td class="l">' + esc(t.Remark) + '</td><td>' + esc(a.Nama) + '</td><td>' + esc(t.Kategori) + '</td>' + (fb ? '<td>' + im(t.FotoBefore) + '</td>' : '') + (fa ? '<td>' + im(t.FotoAfter) + '</td>' : '') + '<td>' + esc(t.PIC) + '</td><td>' + esc(t.Status) + '</td></tr>').join('') + '</tbody></table>';
   }).join('');
 
-  const body = '<div class="paper"><div class="ph2"><img src="' + imgApp + '" alt="APP"><div class="tt">FORM FINDING AUDIT 6S/6K &amp; IMPROVEMENT <small>' + yearStr + '</small></div><img src="' + img6s + '" alt="6S"></div><div class="ln"></div>' +
-    '<div class="inf"><b>AREA / MILL</b><span>: ' + esc(millStr) + '</span><b>AUDITOR</b><span>: ' + esc(auditorStr) + '</span><b>AUDITEE</b><span>: ' + esc(auditeeStr) + '</span><b>DATE</b><span>: ' + esc(dateStr) + '</span></div>' + (tabel || '<p>(Belum ada temuan pada area yang dipilih)</p>') + '</div>';
+  const body = '<div class="paper"><div class="ph2"><img src="/icon/logoAPP.png" alt="APP"><div class="tt">FORM FINDING AUDIT 6S/6K &amp; IMPROVEMENT <small>' + yearStr + '</small></div><img src="/icon/logo6S.png" alt="6S"></div><div class="ln"></div>' +
+  '<div class="inf"><b>AREA / MILL</b><span>: ' + esc(millStr) + '</span><b>AUDITOR</b><span>: ' + esc(auditorStr) + '</span><b>AUDITEE</b><span>: ' + esc(auditeeStr) + '</span><b>DATE</b><span>: ' + esc(dateStr) + '</span></div>' + (tabel || '<p>(Belum ada temuan pada area yang dipilih)</p>') + '</div>';
 
   if (!total) return toast('Tidak ada temuan pada form dan area tersebut.', false);
   $('prevBody').innerHTML = body; $('mPrev').classList.add('on');

@@ -1,4 +1,4 @@
-// ═ Penghubung ke Google Apps Script ═ 
+// ═ Penghubung ke Google Apps Script ═
 function api(fn, args) {
   if (!GAS_URL || GAS_URL.indexOf('script.google.com') < 0) return Promise.reject(new Error('Isi GAS_URL di public/config.js dengan URL /exec Anda.'));
   return fetch(GAS_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ fn: fn, args: args }) })

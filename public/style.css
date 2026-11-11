@@ -77,22 +77,44 @@ mark{background:#FFEB3B;color:#000;border-radius:2px;padding:0 1px}
 .it .fm{display:table;margin:0 0 6px;padding:2px 8px;border-radius:4px;background:#EEF2FF;color:var(--navy);font-size:12px;font-weight:600}
 
 /* =========================================================
-   ATURAN CETAK DOKUMEN (PRINT TO PDF) FULL MULTI-PAGE
+   1. TAMPILAN PRATINJAU DI LAYAR (SIMULASI KERTAS A4)
+   ========================================================= */
+.paper {
+  width: 297mm;           /* Lebar presisi A4 Landscape */
+  min-height: 210mm;      /* Tinggi presisi A4 Landscape */
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 10mm;
+  background: #ffffff;
+  box-sizing: border-box;
+  font-family: Arial, sans-serif;
+  color: #000000;
+}
+
+
+/* =========================================================
+   2. ATURAN CETAK HARD-LOCKED A4 LANDSCAPE (PRINT TO PDF)
    ========================================================= */
 @media print {
-  /* 1. Reset overflow & tinggi pada dokumen utama */
+  /* Pengaturan Ukuran Kertas & Margin Printer Bawaan */
+  @page {
+    size: A4 landscape !important; /* Paksa kertas ke format A4 Landscape */
+    margin: 8mm !important;        /* Margin standar cetak */
+  }
+
   html, body {
+    width: 297mm !important;
     height: auto !important;
     overflow: visible !important;
     background: #ffffff !important;
   }
 
-  /* 2. Sembunyikan semua elemen aplikasi kecuali modal pratinjau */
+  /* Sembunyikan elemen UI aplikasi */
   body * {
     visibility: hidden;
   }
 
-  /* 3. Bebaskan kontainer modal dari fixed layout & overflow */
+  /* Tampilkan hanya dokumen pratinjau */
   #mPrev, 
   #mPrev *,
   .paper,
@@ -105,8 +127,6 @@ mark{background:#FFEB3B;color:#000;border-radius:2px;padding:0 1px}
     display: block !important;
     width: 100% !important;
     height: auto !important;
-    min-height: 100% !important;
-    max-height: none !important;
     overflow: visible !important;
     margin: 0 !important;
     padding: 0 !important;
@@ -115,7 +135,6 @@ mark{background:#FFEB3B;color:#000;border-radius:2px;padding:0 1px}
     border: none !important;
   }
 
-  /* 4. Pastikan kontainer kertas laporan mengalir bebas */
   .paper {
     position: static !important;
     width: 100% !important;
@@ -123,34 +142,45 @@ mark{background:#FFEB3B;color:#000;border-radius:2px;padding:0 1px}
     overflow: visible !important;
     margin: 0 !important;
     padding: 0 !important;
-    page-break-after: auto;
   }
 
-  /* 5. Cegah pemotongan tengah baris tabel di batas halaman */
+  /* Kategori Bingkai Foto Seragam & Jelas (Tanda Temuan Tidak Terpotong) */
+  .pt td img, 
+  .ph img, 
+  .paper table img {
+    width: 100% !important;
+    height: 135px !important;
+    max-height: 135px !important;
+    object-fit: contain !important;
+    object-position: center !important;
+    background-color: #ffffff !important;
+    border: 1px solid #d1d5db !important;
+    border-radius: 4px !important;
+    box-sizing: border-box !important;
+    display: block !important;
+    margin: 0 auto !important;
+  }
+
+  /* Aturan Baris Tabel Agar Tidak Terpotong di Tengah Halaman */
   .pt tr {
+    height: 145px !important;
     page-break-inside: avoid !important;
     break-inside: avoid !important;
   }
 
-  /* 6. Atur baris judul area agar rapi saat pindah halaman */
+  /* Aturan Header Judul Area */
   .pa {
     page-break-before: auto;
     page-break-after: avoid !important;
     break-after: avoid !important;
   }
 
-  /* 7. Sembunyikan tombol UI / footer modal saat dicetak */
+  /* Sembunyikan Navigasi & Tombol UI saat dicetak */
   #mPrev .modal-foot, 
   #mPrev .close, 
   #mPrev button,
   .nav,
   .sec {
     display: none !important;
-  }
-
-  /* 8. Ukuran halaman kertas lanskap */
-  @page {
-    size: A4 landscape;
-    margin: 10mm;
   }
 }

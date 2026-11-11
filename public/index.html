@@ -43,6 +43,20 @@
  <input id="q" placeholder="Cari remark, area, atau PIC…" oninput="debounceRender()">
  <select id="fs" onchange="renderList()"><option value="">Semua status</option><option>Open</option><option>Close</option></select>
  <div id="list"><div class="skel"></div><div class="skel"></div></div>
+ <div class="flt">
+  <input type="search" id="q" placeholder="Cari remark, area, PIC..." oninput="debounceRender()">
+  <select id="fs" onchange="renderList()">
+    <option value="">Semua Status</option>
+    <option value="Open">Open</option>
+    <option value="Close">Close</option>
+  </select>
+  <select id="fv" onchange="renderList()"></select>
+  <!-- Tombol Refresh Data Terbaru -->
+  <button type="button" id="btnRefresh" class="btn-refresh" onclick="refreshDaftar()" title="Refresh Data Terbaru">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+    <span>Refresh</span>
+  </button>
+</div>
 </section>
 <section id="sec-unduh" class="sec">
  <h1>Unduh Hasil Temuan</h1>
@@ -99,7 +113,59 @@
 <div class="modal c" id="mHapusFoto"><div class="sheet"><h2>Hapus foto ini?</h2><img id="hfImg" class="hfimg" alt="">
  <p id="hfTeks" class="mut"></p><p><b>Foto akan dihapus dari temuan dan tidak bisa dikembalikan lewat aplikasi.</b></p>
  <div class="row"><button class="btn ghost" onclick="closeM('mHapusFoto')">Batal</button><button class="btn danger" id="hfOk" onclick="hapusFotoYa()">Ya, Hapus</button></div></div></div>
-<div class="modal c" id="mCrop"><div class="sheet cs"><h2>Potong Foto</h2><p class="mut">Geser kotak atau tarik sudutnya untuk memotong foto.</p>
+<div id="mCrop" class="modal">
+  <div class="modal-body crop-body">
+    <h3>Potong & Tandai Foto</h3>
+    <div class="crop-wrap">
+      <canvas id="cvs"></canvas>
+    </div>
+    
+    <!-- Toolbar Rasio & Mode Pensil -->
+    <div class="crop-toolbar">
+      <button type="button" class="btn-crop" onclick="cropRatio(0)">Bebas</button>
+      <button type="button" class="btn-crop" onclick="cropRatio(1)">1:1</button>
+      <button type="button" class="btn-crop" onclick="cropRatio(4/3)">4:3</button>
+      <button type="button" class="btn-crop" onclick="cropRatio(16/9)">16:9</button>
+      <button type="button" class="btn-crop" onclick="cropRotate()">↻ Putar</button>
+      <button type="button" id="btnPencil" class="btn-crop btn-pencil" onclick="togglePencilMode()">✏️ Coret / Tandai</button>
+    </div>
+
+    <!-- Sub-Toolbar Coretan (Tampil saat tombol Pensil diklik) -->
+    <div id="penBar" class="pen-bar" style="display:none;">
+      <div class="pen-item">
+        <label>Bentuk:</label>
+        <select id="penShape" onchange="C.penShape = this.value">
+          <option value="free">Pensil (Bebas)</option>
+          <option value="circle">Lingkaran</option>
+          <option value="rect">Kotak</option>
+          <option value="arrow">Panah</option>
+        </select>
+      </div>
+      <div class="pen-item">
+        <label>Warna:</label>
+        <input type="color" id="penColor" value="#EF4444" onchange="setPenColor(this.value)">
+        <div class="color-presets">
+          <span style="background:#EF4444" onclick="setPenColor('#EF4444')"></span>
+          <span style="background:#F59E0B" onclick="setPenColor('#F59E0B')"></span>
+          <span style="background:#10B981" onclick="setPenColor('#10B981')"></span>
+          <span style="background:#3B82F6" onclick="setPenColor('#3B82F6')"></span>
+          <span style="background:#FFFFFF" onclick="setPenColor('#FFFFFF')"></span>
+          <span style="background:#000000" onclick="setPenColor('#000000')"></span>
+        </div>
+      </div>
+      <div class="pen-item">
+        <label>Ukuran:</label>
+        <input type="range" id="penSize" min="2" max="25" value="6" oninput="C.penSize = Number(this.value)">
+      </div>
+      <button type="button" class="btn-crop danger-ghost" onclick="undoDraw()">↩ Undo</button>
+    </div>
+
+    <div class="modal-foot">
+      <button type="button" class="btn ghost" onclick="cropCancel()">Batal</button>
+      <button type="button" class="btn primary" onclick="cropDone(false)">Gunakan Foto</button>
+    </div>
+  </div>
+</div>
  <canvas id="cvs"></canvas>
  <div class="pbtn"><button class="btn ghost" type="button" onclick="cropRatio(0)">Bebas</button><button class="btn ghost" type="button" onclick="cropRatio(4/3)">4:3</button><button class="btn ghost" type="button" onclick="cropRatio(1)">1:1</button><button class="btn ghost" type="button" onclick="cropRotate()">Putar</button></div>
  <div class="row"><button class="btn ghost" onclick="cropCancel()">Batal</button><button class="btn ghost" onclick="cropDone(true)">Pakai Foto Utuh</button><button class="btn" onclick="cropDone(false)">Selesai</button></div></div></div>

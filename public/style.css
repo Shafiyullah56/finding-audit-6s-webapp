@@ -76,41 +76,81 @@ mark{background:#FFEB3B;color:#000;border-radius:2px;padding:0 1px}
 .hfimg{display:block;max-width:100%;max-height:40vh;margin:10px auto;border-radius:8px}
 .it .fm{display:table;margin:0 0 6px;padding:2px 8px;border-radius:4px;background:#EEF2FF;color:var(--navy);font-size:12px;font-weight:600}
 
-/* Aturan cetak PDF lansung via browser */
+/* =========================================================
+   ATURAN CETAK DOKUMEN (PRINT TO PDF) FULL MULTI-PAGE
+   ========================================================= */
 @media print {
-  /* Sembunyikan seluruh tampilan UI aplikasi */
+  /* 1. Reset overflow & tinggi pada dokumen utama */
+  html, body {
+    height: auto !important;
+    overflow: visible !important;
+    background: #ffffff !important;
+  }
+
+  /* 2. Sembunyikan semua elemen aplikasi kecuali modal pratinjau */
   body * {
     visibility: hidden;
   }
-  
-  /* Tampilkan hanya area modal pratinjau dan isinya */
-  #mPrev, #mPrev * {
+
+  /* 3. Bebaskan kontainer modal dari fixed layout & overflow */
+  #mPrev, 
+  #mPrev *,
+  .paper,
+  .paper * {
     visibility: visible;
   }
-  
-  /* Atur posisi dokumen pratinjau agar memenuhi halaman kertas */
+
   #mPrev {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
-    margin: 0;
-    padding: 0;
-    background: #ffffff;
-    box-shadow: none;
-    border: none;
+    position: static !important;
+    display: block !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 100% !important;
+    max-height: none !important;
+    overflow: visible !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+    box-shadow: none !important;
+    border: none !important;
   }
 
-  /* Sembunyikan footer modal, tombol close, dan tombol cetak pada hasil dokumen PDF */
+  /* 4. Pastikan kontainer kertas laporan mengalir bebas */
+  .paper {
+    position: static !important;
+    width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    page-break-after: auto;
+  }
+
+  /* 5. Cegah pemotongan tengah baris tabel di batas halaman */
+  .pt tr {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  /* 6. Atur baris judul area agar rapi saat pindah halaman */
+  .pa {
+    page-break-before: auto;
+    page-break-after: avoid !important;
+    break-after: avoid !important;
+  }
+
+  /* 7. Sembunyikan tombol UI / footer modal saat dicetak */
   #mPrev .modal-foot, 
   #mPrev .close, 
-  #mPrev button {
+  #mPrev button,
+  .nav,
+  .sec {
     display: none !important;
   }
 
-  /* Pengaturan ukuran kertas bawaan: A4 Lanskap */
+  /* 8. Ukuran halaman kertas lanskap */
   @page {
     size: A4 landscape;
-    margin: 8mm;
+    margin: 10mm;
   }
 }

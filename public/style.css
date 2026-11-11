@@ -75,3 +75,42 @@ mark{background:#FFEB3B;color:#000;border-radius:2px;padding:0 1px}
 .it .del{display:block;width:100%;margin-top:6px;min-height:40px;padding:0 6px;border:1px solid #FCA5A5;border-radius:4px;background:#fff;color:var(--dg);font:600 13px Inter,Arial;cursor:pointer}
 .hfimg{display:block;max-width:100%;max-height:40vh;margin:10px auto;border-radius:8px}
 .it .fm{display:table;margin:0 0 6px;padding:2px 8px;border-radius:4px;background:#EEF2FF;color:var(--navy);font-size:12px;font-weight:600}
+
+/* Aturan cetak PDF lansung via browser */
+@media print {
+  /* Sembunyikan seluruh tampilan UI aplikasi */
+  body * {
+    visibility: hidden;
+  }
+  
+  /* Tampilkan hanya area modal pratinjau dan isinya */
+  #mPrev, #mPrev * {
+    visibility: visible;
+  }
+  
+  /* Atur posisi dokumen pratinjau agar memenuhi halaman kertas */
+  #mPrev {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    background: #ffffff;
+    box-shadow: none;
+    border: none;
+  }
+
+  /* Sembunyikan footer modal, tombol close, dan tombol cetak pada hasil dokumen PDF */
+  #mPrev .modal-foot, 
+  #mPrev .close, 
+  #mPrev button {
+    display: none !important;
+  }
+
+  /* Pengaturan ukuran kertas bawaan: A4 Lanskap */
+  @page {
+    size: A4 landscape;
+    margin: 8mm;
+  }
+}

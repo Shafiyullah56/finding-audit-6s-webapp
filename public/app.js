@@ -242,6 +242,8 @@ function preview() {
   const auditeeStr = isGabungan ? '-' : (mainForm.Auditee || '');
   const yearStr = !isGabungan && mainForm.Tgl2 ? ' (' + esc(tg(mainForm.Tgl2).slice(0, 4)) + ')' : '';
 
+  let globalNo = 1; // COUNTER GLOBAL PENOMORAN DARI ATAS SAMPAI BAWAH
+
   const tabel = S.areas.filter(a => o.areaIds.includes(a.ID)).map(a => {
     const its = S.temuan.filter(t => o.formIds.includes(t.FormID) && t.AreaID === a.ID);
     if (!its.length) return '';
@@ -256,7 +258,7 @@ function preview() {
 
     total += its.length;
     return '<div class="pa">AREA / SUB-AREA: ' + esc(a.Nama.toUpperCase()) + '</div><table class="pt"><colgroup>' + cg + '</colgroup><thead><tr>' + th + '</tr></thead><tbody>' +
-      its.map((t, idx) => '<tr><td class="no">' + (idx + 1) + '</td><td class="l">' + esc(t.Remark) + '</td><td>' + esc(a.Nama) + '</td><td>' + esc(t.Kategori) + '</td>' + (fb ? '<td>' + im(t.FotoBefore) + '</td>' : '') + (fa ? '<td>' + im(t.FotoAfter) + '</td>' : '') + '<td>' + esc(t.PIC) + '</td><td>' + esc(t.Status) + '</td></tr>').join('') + '</tbody></table>';
+      its.map(t => '<tr><td class="no">' + (globalNo++) + '</td><td class="l">' + esc(t.Remark) + '</td><td>' + esc(a.Nama) + '</td><td>' + esc(t.Kategori) + '</td>' + (fb ? '<td>' + im(t.FotoBefore) + '</td>' : '') + (fa ? '<td>' + im(t.FotoAfter) + '</td>' : '') + '<td>' + esc(t.PIC) + '</td><td>' + esc(t.Status) + '</td></tr>').join('') + '</tbody></table>';
   }).join('');
 
   const body = '<div class="paper"><div class="ph2"><img src="' + S.cfg.logoApp + '" alt="APP"><div class="tt">FORM FINDING AUDIT 6S/6K &amp; IMPROVEMENT <small>' + yearStr + '</small></div><img src="' + S.cfg.logo6s + '" alt="6S"></div><div class="ln"></div>' +

@@ -80,77 +80,27 @@ mark{background:#FFEB3B;color:#000;border-radius:2px;padding:0 1px}
    ATURAN CETAK DOKUMEN (PRINT TO PDF) FULL MULTI-PAGE
    ========================================================= */
 @media print {
-  /* 1. Reset overflow & tinggi pada dokumen utama */
-  html, body {
-    height: auto !important;
-    overflow: visible !important;
-    background: #ffffff !important;
-  }
-
-  /* 2. Sembunyikan semua elemen aplikasi kecuali modal pratinjau */
-  body * {
-    visibility: hidden;
-  }
-
-  /* 3. Bebaskan kontainer modal dari fixed layout & overflow */
-  #mPrev, 
-  #mPrev *,
-  .paper,
-  .paper * {
-    visibility: visible;
-  }
-
-  #mPrev {
-    position: static !important;
+  /* Memastikan foto seragam, besar, jelas, dan TIDAK terpotong */
+  .pt td img, 
+  .ph img, 
+  .paper table img {
+    width: 100% !important;
+    height: 140px !important; /* Mengatur tinggi bingkai seragam & cukup besar */
+    max-height: 140px !important;
+    object-fit: contain !important; /* Menampilkan seluruh area foto utuh tanpa terpotong */
+    object-position: center !important;
+    background-color: #ffffff !important; /* Latar belakang netral jika ada sisa ruang rasio */
+    border: 1px solid #d1d5db !important;
+    border-radius: 4px !important;
+    box-sizing: border-box !important;
     display: block !important;
-    width: 100% !important;
-    height: auto !important;
-    min-height: 100% !important;
-    max-height: none !important;
-    overflow: visible !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    background: #ffffff !important;
-    box-shadow: none !important;
-    border: none !important;
+    margin: 0 auto !important;
   }
 
-  /* 4. Pastikan kontainer kertas laporan mengalir bebas */
-  .paper {
-    position: static !important;
-    width: 100% !important;
-    height: auto !important;
-    overflow: visible !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    page-break-after: auto;
-  }
-
-  /* 5. Cegah pemotongan tengah baris tabel di batas halaman */
+  /* Menyesuaikan tinggi baris tabel agar muat dengan foto besar */
   .pt tr {
+    height: 150px !important;
     page-break-inside: avoid !important;
     break-inside: avoid !important;
-  }
-
-  /* 6. Atur baris judul area agar rapi saat pindah halaman */
-  .pa {
-    page-break-before: auto;
-    page-break-after: avoid !important;
-    break-after: avoid !important;
-  }
-
-  /* 7. Sembunyikan tombol UI / footer modal saat dicetak */
-  #mPrev .modal-foot, 
-  #mPrev .close, 
-  #mPrev button,
-  .nav,
-  .sec {
-    display: none !important;
-  }
-
-  /* 8. Ukuran halaman kertas lanskap */
-  @page {
-    size: A4 landscape;
-    margin: 10mm;
   }
 }

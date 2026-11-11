@@ -264,6 +264,29 @@ function cetakPDF() {
   window.print();
 }
 
+function refreshDaftar() {
+  const btn = $('btnRefresh');
+  if (btn) { btn.disabled = true; btn.classList.add('spinning'); }
+  toast('Memuat data terbaru…');
+
+  google.script.run.withSuccessHandler(r => {
+    if (btn) { btn.disabled = false; btn.classList.remove('spinning'); }
+    if (!r.success) return toast(r.message, false);
+    
+    // Perbarui data lokal aplikasi
+    S.temuan = r.data.temuan;
+    S.forms = r.data.forms;
+    if (r.data.areas) S.areas = r.data.areas;
+    
+    fillForms();
+    renderList();
+    toast('Data temuan berhasil diperbarui!');
+  }).withFailureHandler(e => {
+    if (btn) { btn.disabled = false; btn.classList.remove('spinning'); }
+    toast('Gagal memuat data: ' + e.message, false);
+  }).getInit();
+}
+
 function unduh() {
   const o = readX();
   if (!o.formIds.length) return toast('Pilih minimal satu form.', false);

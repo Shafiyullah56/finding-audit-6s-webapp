@@ -260,6 +260,10 @@ function preview() {
   $('prevBody').innerHTML = body; $('mPrev').classList.add('on');
 }
 
+function cetakPDF() {
+  window.print();
+}
+
 function unduh() {
   if (!S.pin) return toast('Hanya admin yang dapat mengunduh hasil akhir.', false);
   const o = readX(); if (!o.formIds.length) return toast('Pilih minimal satu form.', false);

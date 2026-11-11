@@ -36,7 +36,8 @@ textarea{min-height:110px;resize:vertical}input:focus,select:focus,textarea:focu
 img.logo{border:0;object-fit:contain;padding:2px}
 .prev{position:fixed;inset:0;background:#E5E7EB;z-index:25;display:none;flex-direction:column}.prev.on{display:flex}
 .pbar{display:flex;gap:8px;padding:10px 12px;background:#fff;border-bottom:1px solid var(--bd)}.pbar .btn{margin:0}
-#prevBody{overflow:auto;padding:12px;flex:1}.paper{background:#fff;min-width:780px;padding:14px;font:12px Arial,sans-serif;color:#000;box-shadow:0 2px 8px rgba(0,0,0,.15)}
+#prevBody{overflow:auto;padding:12px;flex:1}
+
 .ph2{display:flex;align-items:center;justify-content:space-between}.ph2 img{height:46px}.tt{font-weight:700;font-size:16px;text-align:center}.tt small{font-size:9px;font-weight:400}
 .ln{height:4px;background:#000;margin:6px 0}.inf{display:grid;grid-template-columns:110px 1fr 110px 1fr;gap:2px 0;margin-bottom:6px}.inf b{font-weight:700}
 .pa{margin:18px 0 4px;font-weight:700;color:#1E3A8A}.pt{width:100%;border-collapse:collapse;table-layout:fixed}.pt th{color:#1F3FD1;border:1px solid #000;padding:4px;font-size:11px}
@@ -77,19 +78,83 @@ mark{background:#FFEB3B;color:#000;border-radius:2px;padding:0 1px}
 .it .fm{display:table;margin:0 0 6px;padding:2px 8px;border-radius:4px;background:#EEF2FF;color:var(--navy);font-size:12px;font-weight:600}
 
 /* =========================================================
-   ATURAN CETAK DOKUMEN (PRINT TO PDF) FULL MULTI-PAGE
+   1. TAMPILAN PRATINJAU DI LAYAR (SIMULASI KERTAS A4)
+   ========================================================= */
+.paper {
+  width: 297mm;           /* Lebar presisi A4 Landscape */
+  min-height: 210mm;      /* Tinggi presisi A4 Landscape */
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 10mm;
+  background: #ffffff;
+  box-sizing: border-box;
+  font-family: Arial, sans-serif;
+  color: #000000;
+}
+
+
+/* =========================================================
+   2. ATURAN CETAK HARD-LOCKED A4 LANDSCAPE (PRINT TO PDF)
    ========================================================= */
 @media print {
-  /* Memastikan foto seragam, besar, jelas, dan TIDAK terpotong */
+  /* Pengaturan Ukuran Kertas & Margin Printer Bawaan */
+  @page {
+    size: A4 landscape !important; /* Paksa kertas ke format A4 Landscape */
+    margin: 8mm !important;        /* Margin standar cetak */
+  }
+
+  html, body {
+    width: 297mm !important;
+    height: auto !important;
+    overflow: visible !important;
+    background: #ffffff !important;
+  }
+
+  /* Sembunyikan elemen UI aplikasi */
+  body * {
+    visibility: hidden;
+  }
+
+  /* Tampilkan hanya dokumen pratinjau */
+  #mPrev, 
+  #mPrev *,
+  .paper,
+  .paper * {
+    visibility: visible;
+  }
+
+  #mPrev {
+    position: static !important;
+    display: block !important;
+    width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+
+  .paper {
+    position: static !important;
+    width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Kategori Bingkai Foto Seragam & Jelas (Tanda Temuan Tidak Terpotong) */
   .pt td img, 
   .ph img, 
   .paper table img {
     width: 100% !important;
-    height: 140px !important; /* Mengatur tinggi bingkai seragam & cukup besar */
-    max-height: 140px !important;
-    object-fit: contain !important; /* Menampilkan seluruh area foto utuh tanpa terpotong */
+    height: 135px !important;
+    max-height: 135px !important;
+    object-fit: contain !important;
     object-position: center !important;
-    background-color: #ffffff !important; /* Latar belakang netral jika ada sisa ruang rasio */
+    background-color: #ffffff !important;
     border: 1px solid #d1d5db !important;
     border-radius: 4px !important;
     box-sizing: border-box !important;
@@ -97,10 +162,26 @@ mark{background:#FFEB3B;color:#000;border-radius:2px;padding:0 1px}
     margin: 0 auto !important;
   }
 
-  /* Menyesuaikan tinggi baris tabel agar muat dengan foto besar */
+  /* Aturan Baris Tabel Agar Tidak Terpotong di Tengah Halaman */
   .pt tr {
-    height: 150px !important;
+    height: 145px !important;
     page-break-inside: avoid !important;
     break-inside: avoid !important;
+  }
+
+  /* Aturan Header Judul Area */
+  .pa {
+    page-break-before: auto;
+    page-break-after: avoid !important;
+    break-after: avoid !important;
+  }
+
+  /* Sembunyikan Navigasi & Tombol UI saat dicetak */
+  #mPrev .modal-foot, 
+  #mPrev .close, 
+  #mPrev button,
+  .nav,
+  .sec {
+    display: none !important;
   }
 }

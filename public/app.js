@@ -231,16 +231,39 @@ function preview() {
   const th = '<th>No</th><th>Remark of finding</th><th>Location</th><th>Finding Category<br><small>(FP, R1-5+W, Z)</small></th>' + (fb ? '<th>Foto Before</th>' : '') + (fa ? '<th>Foto After</th>' : '') + '<th>PIC</th><th>Status</th>';
   const cg = fb && fa ? '<col width="4%"><col width="17%"><col width="10%"><col width="9%"><col width="23%"><col width="23%"><col width="8%"><col width="6%">' : '<col width="4%"><col width="24%"><col width="12%"><col width="10%"><col width="34%"><col width="9%"><col width="7%">';
   const im = id => id ? '<img src="' + thumb(id, 360) + '" alt="">' : ''; let total = 0;
-  const body = forms.map(f => {
-    const tabel = S.areas.filter(a => o.areaIds.includes(a.ID)).map(a => {
-      const its = S.temuan.filter(t => t.FormID === f.ID && t.AreaID === a.ID).sort(byNo); total += its.length;
-      if (!its.length) return '';
-      return '<div class="pa">AREA / SUB-AREA: ' + esc(a.Nama.toUpperCase()) + '</div><table class="pt"><colgroup>' + cg + '</colgroup><thead><tr>' + th + '</tr></thead><tbody>' +
-        its.map(t => '<tr><td class="no">' + esc(t.No) + '</td><td class="l">' + esc(t.Remark) + '</td><td>' + esc(a.Nama) + '</td><td>' + esc(t.Kategori) + '</td>' + (fb ? '<td>' + im(t.FotoBefore) + '</td>' : '') + (fa ? '<td>' + im(t.FotoAfter) + '</td>' : '') + '<td>' + esc(t.PIC) + '</td><td>' + esc(t.Status) + '</td></tr>').join('') + '</tbody></table>';
-    }).join('');
-    return '<div class="paper"><div class="ph2"><img src="' + S.cfg.logoApp + '" alt="APP"><div class="tt">FORM FINDING AUDIT 6S/6K &amp; IMPROVEMENT <small>(' + esc(tg(f.Tgl2).slice(0, 4)) + ')</small></div><img src="' + S.cfg.logo6s + '" alt="6S"></div><div class="ln"></div>' +
-      '<div class="inf"><b>AREA / MILL</b><span>: ' + esc(f.Mill) + '</span><b>AUDITOR</b><span>: ' + esc(f.Auditor) + '</span><b>AUDITEE</b><span>: ' + esc(f.Auditee) + '</span><b>DATE</b><span>: ' + esc(tg(f.Tgl1) + ' - ' + tg(f.Tgl2)) + '</span></div>' + (tabel || '<p>(Belum ada temuan pada area yang dipilih)</p>') + '</div>';
+  
+  const isGabungan = forms.length > 1;
+  const mainForm = forms[0] || {};
+  const isSelesai = t => t.Status === 'Close' || (t.FotoAfter && String(t.FotoAfter).trim() !== '');
+
+  const dateStr = isGabungan ? '' : (tg(mainForm.Tgl1) + ' - ' + tg(mainForm.Tgl2));
+  const millStr = isGabungan ? '-' : (mainForm.Mill || '');
+  const auditorStr = isGabungan ? '-' : (mainForm.Auditor || '');
+  const auditeeStr = isGabungan ? '-' : (mainForm.Auditee || '');
+  const yearStr = !isGabungan && mainForm.Tgl2 ? ' (' + esc(tg(mainForm.Tgl2).slice(0, 4)) + ')' : '';
+
+  let globalNo = 1; // COUNTER GLOBAL PENOMORAN DARI ATAS SAMPAI BAWAH
+
+  const tabel = S.areas.filter(a => o.areaIds.includes(a.ID)).map(a => {
+    const its = S.temuan.filter(t => o.formIds.includes(t.FormID) && t.AreaID === a.ID);
+    if (!its.length) return '';
+    
+    // Sort: Close / Ada Foto After paling atas
+    its.sort((x, y) => {
+      const sX = isSelesai(x) ? 0 : 1;
+      const sY = isSelesai(y) ? 0 : 1;
+      if (sX !== sY) return sX - sY;
+      return (Number(x.No) || 0) - (Number(y.No) || 0);
+    });
+
+    total += its.length;
+    return '<div class="pa">AREA / SUB-AREA: ' + esc(a.Nama.toUpperCase()) + '</div><table class="pt"><colgroup>' + cg + '</colgroup><thead><tr>' + th + '</tr></thead><tbody>' +
+      its.map(t => '<tr><td class="no">' + (globalNo++) + '</td><td class="l">' + esc(t.Remark) + '</td><td>' + esc(a.Nama) + '</td><td>' + esc(t.Kategori) + '</td>' + (fb ? '<td>' + im(t.FotoBefore) + '</td>' : '') + (fa ? '<td>' + im(t.FotoAfter) + '</td>' : '') + '<td>' + esc(t.PIC) + '</td><td>' + esc(t.Status) + '</td></tr>').join('') + '</tbody></table>';
   }).join('');
+
+  const body = '<div class="paper"><div class="ph2"><img src="' + S.cfg.logoApp + '" alt="APP"><div class="tt">FORM FINDING AUDIT 6S/6K &amp; IMPROVEMENT <small>' + yearStr + '</small></div><img src="' + S.cfg.logo6s + '" alt="6S"></div><div class="ln"></div>' +
+    '<div class="inf"><b>AREA / MILL</b><span>: ' + esc(millStr) + '</span><b>AUDITOR</b><span>: ' + esc(auditorStr) + '</span><b>AUDITEE</b><span>: ' + esc(auditeeStr) + '</span><b>DATE</b><span>: ' + esc(dateStr) + '</span></div>' + (tabel || '<p>(Belum ada temuan pada area yang dipilih)</p>') + '</div>';
+
   if (!total) return toast('Tidak ada temuan pada form dan area tersebut.', false);
   $('prevBody').innerHTML = body; $('mPrev').classList.add('on');
 }
